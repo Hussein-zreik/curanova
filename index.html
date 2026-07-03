@@ -282,6 +282,8 @@
   .pt-card .pc-name{font-family:'Plus Jakarta Sans';font-weight:700;font-size:14.5px;color:var(--navy)}
   .pt-card .pc-meta{font-size:12px;color:var(--muted);margin-top:1px;display:flex;gap:10px;flex-wrap:wrap}
   .pt-card .pc-meta .mrn{font-family:'IBM Plex Mono';color:var(--teal);font-weight:600}
+  .status-chip{font-size:10px;font-weight:700;font-family:'Plus Jakarta Sans';padding:2px 9px;border-radius:20px;color:#fff;white-space:nowrap}
+  .s-crit{background:var(--high)}.s-warn{background:var(--mod)}.s-good{background:var(--ok)}.s-info{background:var(--muted)}
   .pt-card .pc-visits{flex:none;text-align:right}
   .pt-card .pc-visits b{font-family:'IBM Plex Mono';font-size:18px;color:var(--navy);display:block;line-height:1}
   .pt-card .pc-visits span{font-size:10px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.04em}
@@ -1337,10 +1339,10 @@ function lastVisit(p){return p.visits[p.visits.length-1];}
 function lastTime(p){const v=lastVisit(p);return v?new Date(v.savedAt).getTime():0;}
 function emptyState(t,s){return `<div class="log-empty"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V9l-6-6z"/><path d="M14 3v6h6"/></svg><div class="le-t">${esc(t)}</div><div style="font-size:12.5px;margin-top:3px">${esc(s)}</div></div>`;}
 function patientCard(p){
-  const n=p.visits.length,last=lastVisit(p);
+  const n=p.visits.length,last=lastVisit(p),st=overallStatus(p);
   return `<div class="pt-card" data-mrn="${escAttr(p.mrn)}"><div class="av">${esc(initials(p.name))}</div>
     <div class="pc-main"><div class="pc-name">${esc(p.name||'(unnamed)')}</div>
-      <div class="pc-meta"><span class="mrn">MRN ${esc(p.mrn)}</span>${p.dob?`<span>DOB ${esc(p.dob)}</span>`:''}${last?`<span>Last: ${esc(last.date||fmtDate(last.savedAt))}</span>`:''}</div></div>
+      <div class="pc-meta">${st?`<span class="status-chip s-${st.tone}">${esc(st.chip)}</span>`:''}<span class="mrn">MRN ${esc(p.mrn)}</span>${p.dob?`<span>DOB ${esc(p.dob)}</span>`:''}${last?`<span>Last: ${esc(last.date||fmtDate(last.savedAt))}</span>`:''}</div></div>
     <div class="pc-visits"><b>${n}</b><span>visit${n!==1?'s':''}</span></div></div>`;
 }
 function renderLog(){
@@ -1395,6 +1397,7 @@ function openPatient(mrn){
     <div class="pt-head"><div class="av">${esc(initials(p.name))}</div>
       <div><h3 class="jakarta">${esc(p.name||'(unnamed)')}</h3>
         <div class="ph-meta"><span class="mono">MRN ${esc(p.mrn)}</span>${p.dob?`<span>DOB <b>${esc(p.dob)}</b></span>`:''}<span><b>${p.visits.length}</b> visit${p.visits.length!==1?'s':''}</span>${md?`<span>Referring: <b>${esc(md.physician)}</b></span>`:''}</div></div></div>
+    ${patientAssessmentLine(p)}
     ${trajectoryHTML(p)}
     ${[...p.visits].reverse().map(visitHTML).join('')}
   </div></div>`;
@@ -1601,23 +1604,64 @@ function sparkline(pts){
   const dots=pts.map((p,i)=>`<circle cx="${xs(i).toFixed(1)}" cy="${ys(p.area).toFixed(1)}" r="3.5" fill="#0D9488"/>`).join('');
   return `<svg class="spark" viewBox="0 0 ${w} ${hgt}" preserveAspectRatio="none"><path d="${line}" fill="none" stroke="#0D9488" stroke-width="2.5" vector-effect="non-scaling-stroke"/>${dots}</svg>`;
 }
+/* ---- the Log ASSESSES: synthesize a status per wound from its saved visits ---- */
+function groupWounds(p){const g={};(p.visits||[]).forEach(v=>{const k=v.woundLabel||v.toolTitle||'Wound';(g[k]=g[k]||[]).push(v);});return g;}
+function assessWound(vs){
+  const sorted=[...vs].sort((a,b)=>new Date(a.savedAt)-new Date(b.savedAt));
+  const L=sorted[sorted.length-1]||{}, n=sorted.length;
+  const al=L.alerts||[], crit=al.filter(a=>a.sev==='crit').length, warn=al.filter(a=>a.sev==='warn').length;
+  const area=typeof L.area==='number'?L.area:null, red=typeof L.reductionPct==='number'?L.reductionPct:null,
+        prevPct=typeof L.prevPct==='number'?L.prevPct:null, bwat=typeof L.bwat==='number'?L.bwat:null,
+        weeks=typeof L.weeks==='number'?L.weeks:null;
+  let status,tone,chip,why;
+  if((area!=null&&area<=0.1)||(bwat!=null&&bwat<=13)){status='Healed / resurfaced';tone='good';chip='Healed';why='Wound closed — BWAT at floor / area ~0.';}
+  else if(crit>0||(prevPct!=null&&prevPct>=CDS.areaWorsePct)||(bwat!=null&&bwat>CDS.bwatSevere)||(weeks!=null&&weeks>=CDS.healWeek&&red!=null&&red<CDS.healReductionPct)){
+    status='Deteriorating — escalate';tone='crit';chip='Escalate';const b=[];
+    if(prevPct!=null&&prevPct>=CDS.areaWorsePct)b.push(`area ↑${prevPct}% vs last visit`);
+    if(weeks!=null&&weeks>=CDS.healWeek&&red!=null&&red<CDS.healReductionPct)b.push(`${red}% reduction by wk ${weeks} (target ≥${CDS.healReductionPct}%)`);
+    if(bwat!=null&&bwat>CDS.bwatSevere)b.push(`BWAT ${bwat}/65`);
+    if(!b.length&&crit)b.push(`${crit} critical alert${crit>1?'s':''}`);
+    why=b.join(' · ')+'.';
+  }
+  else if(warn>0||(bwat!=null&&bwat>=CDS.bwatStalled)||(n>=2&&red!=null&&red<20)){
+    status='Stalled — watch';tone='warn';chip='Watch';const b=[];
+    if(bwat!=null&&bwat>=CDS.bwatStalled)b.push(`BWAT ${bwat}/65 stalled`);
+    if(n>=2&&red!=null)b.push(`${red}% below baseline`);
+    if(!b.length&&warn)b.push(`${warn} warning${warn>1?'s':''}`);
+    why=b.join(' · ')+'. Optimise dressing / offloading & reassess.';
+  }
+  else if(n<2||red==null){status='Baseline recorded';tone='info';chip='New';why='First measured visit — trend not yet established.';}
+  else{const onTrack=red>=CDS.healReductionPct;status=onTrack?'On track to heal':'Healing';tone='good';chip=onTrack?'On track':'Healing';
+    why=onTrack&&weeks!=null?`${red}% area reduction by wk ${weeks} — meets the ≥${CDS.healReductionPct}% predictor.`:`${red}% below baseline${bwat!=null?` · BWAT ${bwat}/65`:''}.`;}
+  return {status,tone,chip,why};
+}
+const TONE_RANK={crit:0,warn:1,info:2,good:3};
+function overallStatus(p){let best=null;Object.values(groupWounds(p)).forEach(vs=>{const a=assessWound(vs);if(!best||TONE_RANK[a.tone]<TONE_RANK[best.tone])best=a;});return best;}
+function patientAssessmentLine(p){
+  const items=Object.values(groupWounds(p)).map(assessWound);if(!items.length)return'';
+  const worst=items.reduce((m,a)=>!m||TONE_RANK[a.tone]<TONE_RANK[m.tone]?a:m,null);
+  const counts={};items.forEach(a=>counts[a.chip]=(counts[a.chip]||0)+1);
+  const summary=Object.entries(counts).map(([k,v])=>`${v} ${k.toLowerCase()}`).join(' · ');
+  return `<div class="cds-alert cds-${worst.tone}" style="margin:14px 0 2px"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${CDS_ICON[worst.tone]}</svg><span><b>Log assessment:</b> ${items.length} wound${items.length!==1?'s':''} — ${esc(summary)}.</span></div>`;
+}
 function trajectoryHTML(p){
-  const groups={};
-  p.visits.forEach(v=>{const key=v.woundLabel||v.toolTitle||'Wound';(groups[key]=groups[key]||[]).push(v);});
-  let out='';
-  Object.entries(groups).forEach(([name,vs])=>{
-    const pts=vs.filter(v=>typeof v.area==='number').sort((a,b)=>new Date(a.savedAt)-new Date(b.savedAt));
-    if(!pts.length)return;
-    const base=pts[0].area, latest=pts[pts.length-1].area, reduction=base>0?Math.round((base-latest)/base*100):0;
-    out+=`<div class="traj"><div class="traj-h"><span class="tt">${esc(name)}</span><span class="ts">${pts.length} measured visit${pts.length!==1?'s':''} · ${base} → ${latest} cm² (${reduction>=0?'↓':'↑'}${Math.abs(reduction)}%)</span></div><div class="traj-b">`;
-    out+= pts.length>=2 ? sparkline(pts) : '<div class="hint">Record another measured visit to plot a healing curve.</div>';
-    out+=`<table class="traj-tbl"><thead><tr><th>Date</th><th>Area cm²</th><th>Δ prev</th><th>↓ base</th><th>BWAT</th></tr></thead><tbody>`;
-    pts.forEach((v,i)=>{const dprev=i>0&&pts[i-1].area>0?Math.round((v.area-pts[i-1].area)/pts[i-1].area*100):null;
-      const dbase=base>0?Math.round((base-v.area)/base*100):null;
-      out+=`<tr><td>${esc(v.date||fmtDate(v.savedAt))}</td><td>${v.area}</td><td class="${dprev>0?'up':dprev<0?'down':''}">${dprev==null?'—':pctTxt(dprev)}</td><td>${dbase==null?'—':dbase+'%'}</td><td>${v.bwat!=null?v.bwat:'—'}</td></tr>`;});
-    out+=`</tbody></table></div></div>`;
-  });
-  return out;
+  return Object.entries(groupWounds(p)).map(([name,vs])=>{
+    const a=assessWound(vs);
+    const pts=vs.filter(v=>typeof v.area==='number').sort((x,y)=>new Date(x.savedAt)-new Date(y.savedAt));
+    const summary=pts.length?`${pts.length} measured · ${pts[0].area} → ${pts[pts.length-1].area} cm²`:`${vs.length} visit${vs.length!==1?'s':''} · no area recorded`;
+    let body=`<div class="cds-alert cds-${a.tone}" style="margin:0 0 12px"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${CDS_ICON[a.tone]}</svg><span><b>${esc(a.status)}</b> — ${esc(a.why)}</span></div>`;
+    if(pts.length>=2)body+=sparkline(pts);
+    else if(pts.length===1)body+='<div class="hint">Record another measured visit to plot a healing curve.</div>';
+    if(pts.length){
+      const base=pts[0].area;
+      body+=`<table class="traj-tbl"><thead><tr><th>Date</th><th>Area cm²</th><th>Δ prev</th><th>↓ base</th><th>BWAT</th></tr></thead><tbody>`;
+      pts.forEach((v,i)=>{const dprev=i>0&&pts[i-1].area>0?Math.round((v.area-pts[i-1].area)/pts[i-1].area*100):null;
+        const dbase=base>0?Math.round((base-v.area)/base*100):null;
+        body+=`<tr><td>${esc(v.date||fmtDate(v.savedAt))}</td><td>${v.area}</td><td class="${dprev>0?'up':dprev<0?'down':''}">${dprev==null?'—':pctTxt(dprev)}</td><td>${dbase==null?'—':dbase+'%'}</td><td>${v.bwat!=null?v.bwat:'—'}</td></tr>`;});
+      body+=`</tbody></table>`;
+    }
+    return `<div class="traj"><div class="traj-h"><span class="tt">${esc(name)}</span><span class="ts">${esc(summary)}</span></div><div class="traj-b">${body}</div></div>`;
+  }).join('');
 }
 
 /* ---- init ---- */
