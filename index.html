@@ -334,6 +334,34 @@
   .mini-score .ms-l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
   .mini-score .ms-v{font-family:'Plus Jakarta Sans';font-weight:700;font-size:13.5px;margin-top:1px}
   .mini-score .ms-chip{margin-left:auto;font-size:11px;font-weight:700;font-family:'Plus Jakarta Sans';padding:4px 11px;border-radius:20px;color:#fff;flex:none}
+
+  /* ---------- photo progression + lightbox ---------- */
+  .ts-lbl{font-family:'Plus Jakarta Sans';font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px}
+  .photo-strip{display:flex;gap:10px;overflow-x:auto;padding:2px 0 6px}
+  .pstrip{flex:none;width:118px;text-align:center;cursor:zoom-in;margin:0}
+  .pstrip img{width:118px;height:118px;object-fit:cover;border-radius:9px;border:1px solid var(--border);transition:.14s}
+  .pstrip img:hover{border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,148,136,.12)}
+  .pstrip figcaption{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.3}
+  .pstrip .tag2{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--teal)}
+  .lightbox{position:fixed;inset:0;z-index:120;background:rgba(11,42,67,.92);display:none;place-items:center;padding:24px;cursor:zoom-out}
+  .lightbox.show{display:grid}
+  .lightbox img{max-width:100%;max-height:100%;border-radius:10px;box-shadow:var(--shadow-lg)}
+  @media print{.photo-strip{flex-wrap:wrap}.pstrip{width:150px}.pstrip img{width:150px;height:150px}}
+
+  /* ---------- body-map picker ---------- */
+  .bmap{position:fixed;inset:0;z-index:110;background:rgba(11,42,67,.55);backdrop-filter:blur(3px);display:none;place-items:center;padding:18px}
+  .bmap.show{display:grid}
+  .bmap-card{background:#fff;border-radius:16px;max-width:440px;width:100%;padding:18px 20px;box-shadow:var(--shadow-lg)}
+  .bmap-h{display:flex;align-items:center;margin-bottom:6px}.bmap-h b{font-size:16px;color:var(--navy)}
+  .bmap-x{margin-left:auto;border:0;background:none;font-size:22px;color:var(--muted-2);cursor:pointer;line-height:1}
+  .bmap-views{display:flex;gap:10px;justify-content:center}
+  .bmap-view{flex:1;text-align:center}.bmap-view .bvl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+  .bmap-view svg{width:100%;max-width:170px;height:auto}
+  .bsil{fill:var(--canvas);stroke:var(--border);stroke-width:1.5}
+  .bsite{cursor:pointer}
+  .bsite circle{fill:var(--teal-2);opacity:.55;stroke:#fff;stroke-width:1.5;transition:.12s}
+  .bsite:hover circle{opacity:1;r:7}
+  .bmap-sel{margin-top:12px;text-align:center;font-size:12.5px;color:var(--muted);background:var(--canvas-2);border-radius:9px;padding:9px}
   .pt-card .pc-visits{flex:none;text-align:right}
   .pt-card .pc-visits b{font-family:'IBM Plex Mono';font-size:18px;color:var(--navy);display:block;line-height:1}
   .pt-card .pc-visits span{font-size:10px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.04em}
@@ -515,7 +543,21 @@
           <div class="list-input"><input type="text" list="dl-physicians" data-remember="physicians" placeholder="Dr."><button type="button" class="addbtn" data-addlist="physicians" title="Save this physician to the list">＋</button></div></div>
         <div class="field"><label>Specialty</label><input type="text" list="dl-specialties" data-remember="specialties" placeholder="Select or type…"></div>
         <div class="field span2"><label>Wound ID / label <span class="tag">trends</span></label><input type="text" data-woundlabel placeholder="e.g. Sacral PI · R heel DFU — groups the same wound's visits for healing trends"></div>
+        <div class="field span2"><label>Body location <span class="tag">map</span></label>
+          <div class="list-input"><input type="text" data-bodyloc placeholder="e.g. Sacrum — or tap the body map →"><button type="button" class="addbtn" onclick="openBodyMap()" title="Pick on a body map" style="font-size:15px">🧍</button></div></div>
       </div>
+    </div>
+  </div>
+
+  <!-- ===== Body-map location picker ===== -->
+  <div class="bmap" id="bodyMap">
+    <div class="bmap-card">
+      <div class="bmap-h"><b class="jakarta">Select wound location</b><button class="bmap-x" onclick="closeBodyMap()">×</button></div>
+      <div class="bmap-views">
+        <div class="bmap-view"><div class="bvl">Front</div><div id="bmapFront"></div></div>
+        <div class="bmap-view"><div class="bvl">Back</div><div id="bmapBack"></div></div>
+      </div>
+      <div class="bmap-sel">Tap a site to set the location.</div>
     </div>
   </div>
 
@@ -1027,6 +1069,7 @@
 
 <div class="toast" id="toast"></div>
 <div class="alert-banner" id="alertBanner"></div>
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('show')"><img id="lightboxImg" alt="wound photo enlarged"></div>
 
 <!-- ===== Secure access gate (only shown when cloud sync is enabled) ===== -->
 <div class="lock" id="lockScreen">
@@ -1387,7 +1430,7 @@ function captureTool(toolKey){
 
 /* ---- read shared Patient & Visit panel ---- */
 function patientFieldValues(){
-  const map={'Patient name':'name','File / MRN':'mrn','Date of birth':'dob','Assessment date':'date','Next visit date':'nextVisit','Visit #':'visitNo','Attending nurse':'nurse','Referring physician':'physician','Specialty':'specialty'};
+  const map={'Patient name':'name','File / MRN':'mrn','Date of birth':'dob','Assessment date':'date','Next visit date':'nextVisit','Visit #':'visitNo','Attending nurse':'nurse','Referring physician':'physician','Specialty':'specialty','Body location':'bodyLoc'};
   const out={};
   patientPanel.querySelectorAll('.field').forEach(f=>{
     const lab=f.querySelector('label'),ctrl=f.querySelector('input,select,textarea');
@@ -1422,7 +1465,7 @@ function saveToLog(){
   if(hi.length)cap.sections.unshift({title:'Healing metrics',items:hi});
   const visit={
     id:'v'+Date.now(),savedAt:new Date().toISOString(),
-    tool:active,toolTitle:tools[active].dataset.title,woundLabel:woundLabelVal(),
+    tool:active,toolTitle:tools[active].dataset.title,woundLabel:woundLabelVal(),bodyLoc:pv.bodyLoc||'',
     date:pv.date||'',nextVisit:pv.nextVisit||'',visitNo:pv.visitNo||'',nurse:pv.nurse||'',physician:pv.physician||'',specialty:pv.specialty||'',
     score:cap.score,sections:cap.sections,images:toolImages[active].slice(),alerts
   };
@@ -1594,6 +1637,7 @@ function deleteVisit(vid){
   if(patients[mrn])openPatient(mrn);else closePatient();
 }
 document.addEventListener('click',e=>{const card=e.target.closest('.pt-card');if(card)openPatient(card.dataset.mrn);});
+document.addEventListener('click',e=>{const im=e.target.closest('.photo-strip img,.vimg-grid img');if(im&&im.src){document.getElementById('lightboxImg').src=im.src;document.getElementById('lightbox').classList.add('show');}});
 document.getElementById('logSearch').addEventListener('input',()=>{if(openMrn)closePatient();else renderLog();});
 
 /* =================================================================
@@ -1902,6 +1946,14 @@ function trajectoryHTML(p){
         body+=`<tr><td>${esc(v.date||fmtDate(v.savedAt))}</td><td>${v.area}</td><td class="${dprev>0?'up':dprev<0?'down':''}">${dprev==null?'—':pctTxt(dprev)}</td><td>${dbase==null?'—':dbase+'%'}</td><td>${v.bwat!=null?v.bwat:'—'}</td></tr>`;});
       body+=`</tbody></table>`;
     }
+    // photo progression: one thumbnail per visit that has an image, oldest → newest
+    const wImg=[...vs].filter(v=>v.images&&v.images.length).sort((x,y)=>new Date(x.savedAt)-new Date(y.savedAt));
+    if(wImg.length){
+      body+=`<div class="ts-lbl">Photo progression</div><div class="photo-strip">`+wImg.map((v,i)=>{
+        const tagTxt=i===0&&wImg.length>1?'Baseline':i===wImg.length-1&&wImg.length>1?'Latest':'';
+        return `<figure class="pstrip"><img src="${escAttr(v.images[0])}" alt="wound photo"><figcaption>${tagTxt?`<span class="tag2">${tagTxt}</span><br>`:''}${esc(v.date||fmtDate(v.savedAt))}</figcaption></figure>`;
+      }).join('')+`</div>`;
+    }
     return `<div class="traj"><div class="traj-h"><span class="tt">${esc(name)}</span><span class="ts">${esc(summary)}</span></div><div class="traj-b">${body}</div></div>`;
   }).join('');
 }
@@ -2079,9 +2131,38 @@ function restoreDraft(){
   if(any){ recalc(); toast('Unsaved draft restored'); }
 }
 
+/* ---- body-map location picker ---- */
+function bodySilhouette(){return `
+  <circle cx="80" cy="26" r="18" class="bsil"/>
+  <rect x="58" y="46" width="44" height="92" rx="16" class="bsil"/>
+  <rect x="40" y="52" width="15" height="80" rx="7" class="bsil"/>
+  <rect x="105" y="52" width="15" height="80" rx="7" class="bsil"/>
+  <rect x="60" y="132" width="18" height="128" rx="9" class="bsil"/>
+  <rect x="82" y="132" width="18" height="128" rx="9" class="bsil"/>
+  <rect x="60" y="256" width="18" height="26" rx="6" class="bsil"/>
+  <rect x="82" y="256" width="18" height="26" rx="6" class="bsil"/>`;}
+const BODY_FRONT=[{x:80,y:20,l:'Forehead'},{x:80,y:68,l:'Chest'},{x:80,y:104,l:'Abdomen'},
+  {x:47,y:58,l:'R shoulder'},{x:113,y:58,l:'L shoulder'},{x:44,y:124,l:'R hand'},{x:116,y:124,l:'L hand'},
+  {x:69,y:150,l:'R hip'},{x:91,y:150,l:'L hip'},{x:69,y:198,l:'R knee'},{x:91,y:198,l:'L knee'},
+  {x:69,y:240,l:'R shin'},{x:91,y:240,l:'L shin'},{x:69,y:272,l:'R foot (dorsum)'},{x:91,y:272,l:'L foot (dorsum)'}];
+const BODY_BACK=[{x:80,y:20,l:'Occiput'},{x:64,y:66,l:'R scapula'},{x:96,y:66,l:'L scapula'},{x:80,y:96,l:'Spine'},
+  {x:44,y:124,l:'R elbow'},{x:116,y:124,l:'L elbow'},{x:80,y:128,l:'Sacrum'},{x:80,y:142,l:'Coccyx'},
+  {x:66,y:132,l:'R buttock'},{x:94,y:132,l:'L buttock'},{x:62,y:150,l:'R ischial tuberosity'},{x:98,y:150,l:'L ischial tuberosity'},
+  {x:56,y:142,l:'R trochanter'},{x:104,y:142,l:'L trochanter'},{x:69,y:278,l:'R heel'},{x:91,y:278,l:'L heel'}];
+function buildBodyMap(){
+  const svg=sites=>`<svg viewBox="0 0 160 300">${bodySilhouette()}${sites.map(s=>`<g class="bsite" data-region="${escAttr(s.l)}"><circle cx="${s.x}" cy="${s.y}" r="5.5"/><title>${esc(s.l)}</title></g>`).join('')}</svg>`;
+  document.getElementById('bmapFront').innerHTML=svg(BODY_FRONT);
+  document.getElementById('bmapBack').innerHTML=svg(BODY_BACK);
+}
+function openBodyMap(){ document.getElementById('bodyMap').classList.add('show'); }
+function closeBodyMap(){ document.getElementById('bodyMap').classList.remove('show'); }
+function setBodyRegion(r){ const inp=patientPanel.querySelector('[data-bodyloc]'); if(inp){inp.value=r;inp.dispatchEvent(new Event('input',{bubbles:true}));} closeBodyMap(); toast('Location: '+r); }
+document.addEventListener('click',e=>{ const g=e.target.closest('.bsite'); if(g)setBodyRegion(g.dataset.region); if(e.target.id==='bodyMap')closeBodyMap(); });
+
 /* ---- init ---- */
 buildBWAT();
 buildInstruments();
+buildBodyMap();
 placeShared('surg');
 renderDatalists();
 restoreDraft();
