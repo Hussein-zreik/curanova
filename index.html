@@ -344,6 +344,74 @@
     margin-bottom:12px}
   .log-print-head .pm{width:30px;height:30px;border-radius:7px;background:var(--navy);display:grid;place-items:center}
   .log-print-head .pm svg{width:18px;height:18px}
+
+  /* ---------- Measurements strip + BWAT summary ---------- */
+  .metric-strip{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 4px}
+  .metric-strip:empty{display:none}
+  .metric{flex:1;min-width:130px;background:var(--canvas-2);border:1px solid var(--border-2);border-radius:11px;padding:10px 13px}
+  .metric .ml{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700}
+  .metric .mv{font-family:'IBM Plex Mono';font-weight:600;font-size:19px;color:var(--navy);margin-top:2px;line-height:1.1}
+  .metric .mv small{font-size:11px;color:var(--muted-2);font-family:'Inter';font-weight:600}
+  .metric .md{font-size:11px;margin-top:2px;font-weight:600;color:var(--muted)}
+  .metric .md.up{color:var(--high)}.metric .md.down{color:var(--ok)}
+  #bwatSummary{display:flex;align-items:center;gap:13px;margin-top:12px;padding:12px 14px;border-radius:11px;
+    background:var(--canvas-2);border:1px solid var(--border-2)}
+  #bwatSummary .bt{font-family:'IBM Plex Mono';font-weight:600;font-size:26px;color:var(--navy);line-height:1;flex:none}
+  #bwatSummary .bt small{font-size:13px;color:var(--muted-2)}
+  #bwatSummary .bmeta{min-width:0}
+  #bwatSummary .bl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  #bwatSummary .bv{font-family:'Plus Jakarta Sans';font-weight:700;font-size:14px;margin-top:1px}
+  #bwatSummary .bchip{margin-left:auto;font-size:11px;font-weight:700;font-family:'Plus Jakarta Sans';
+    padding:4px 11px;border-radius:20px;color:#fff;flex:none}
+
+  /* ---------- CDS alerts ---------- */
+  .cds-list{display:flex;flex-direction:column;gap:8px}
+  .cds-alert{display:flex;gap:10px;padding:11px 13px;border-radius:10px;font-size:12.5px;line-height:1.45;border:1px solid}
+  .cds-alert svg{width:17px;height:17px;flex:none;margin-top:1px}
+  .cds-alert b{font-weight:700}
+  .cds-crit{background:#FDECEA;border-color:#F1C4BE;color:#8A2B22}.cds-crit svg{stroke:#C0392B}
+  .cds-warn{background:#FEF3EC;border-color:#F6D8BE;color:#8A4B12}.cds-warn svg{stroke:#DD6B20}
+  .cds-good{background:#E4F5EE;border-color:#BBE6D4;color:#155E45}.cds-good svg{stroke:#12855F}
+  .cds-info{background:#EAF3FB;border-color:#CBE0F2;color:#1C4E7A}.cds-info svg{stroke:#2C7BC0}
+  .cds-none{font-size:12.5px;color:var(--muted);display:flex;gap:9px;align-items:center}
+  .cds-none svg{width:17px;height:17px;stroke:var(--ok);flex:none}
+
+  /* alert badges in the log */
+  .vbadges{display:flex;gap:5px;flex-wrap:wrap}
+  .vbadge{font-size:10px;font-weight:700;font-family:'Plus Jakarta Sans';padding:2px 8px;border-radius:20px;white-space:nowrap}
+  .vbadge.b-crit{background:#F1C4BE;color:#8A2B22}.vbadge.b-warn{background:#F6D8BE;color:#8A4B12}
+
+  /* trajectory block in the log */
+  .traj{border:1px solid var(--border);border-radius:var(--r-sm);margin-top:12px;overflow:hidden}
+  .traj-h{padding:11px 14px;background:var(--canvas-2);border-bottom:1px solid var(--border-2);
+    display:flex;align-items:center;gap:10px}
+  .traj-h .tt{font-weight:700;font-size:13.5px;color:var(--navy)}
+  .traj-h .ts{font-size:11.5px;color:var(--muted);margin-left:auto}
+  .traj-b{padding:14px}
+  .spark{width:100%;height:74px;display:block}
+  .traj-tbl{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
+  .traj-tbl th,.traj-tbl td{text-align:right;padding:5px 8px;border-bottom:1px solid var(--border-2);white-space:nowrap}
+  .traj-tbl th{font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700}
+  .traj-tbl td:first-child,.traj-tbl th:first-child{text-align:left}
+  .traj-tbl .up{color:var(--high);font-weight:600}.traj-tbl .down{color:var(--ok);font-weight:600}
+
+  /* alert banner (critical, on save) */
+  .alert-banner{position:fixed;left:50%;bottom:80px;transform:translate(-50%,20px);z-index:60;max-width:560px;
+    width:calc(100% - 32px);background:#fff;border:1px solid #F1C4BE;border-left:5px solid var(--high);
+    border-radius:12px;box-shadow:var(--shadow-lg);padding:14px 16px;opacity:0;pointer-events:none;transition:.25s}
+  .alert-banner.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  .alert-banner h4{font-size:14px;color:var(--high);display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .alert-banner h4 svg{width:17px;height:17px;stroke:var(--high)}
+  .alert-banner ul{margin:0 0 0 4px;padding:0;list-style:none;font-size:12.5px;color:var(--ink);line-height:1.5}
+  .alert-banner li{padding:2px 0 2px 14px;position:relative}
+  .alert-banner li::before{content:"•";position:absolute;left:2px;color:var(--high)}
+  .alert-banner .ab-close{position:absolute;top:10px;right:12px;border:0;background:none;font-size:18px;
+    color:var(--muted-2);cursor:pointer;line-height:1}
+
+  @media print{
+    #cdsPanel .cds-none{display:none}
+    .traj-h{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
 </style>
 </head>
 <body>
@@ -393,8 +461,33 @@
         <div class="field"><label>Referring physician</label>
           <div class="list-input"><input type="text" list="dl-physicians" data-remember="physicians" placeholder="Dr."><button type="button" class="addbtn" data-addlist="physicians" title="Save this physician to the list">＋</button></div></div>
         <div class="field"><label>Specialty</label><input type="text" list="dl-specialties" data-remember="specialties" placeholder="Select or type…"></div>
+        <div class="field span2"><label>Wound ID / label <span class="tag">trends</span></label><input type="text" data-woundlabel placeholder="e.g. Sacral PI · R heel DFU — groups the same wound's visits for healing trends"></div>
       </div>
     </div>
+  </div>
+
+  <!-- ===== SHARED: Measurements + BWAT (moved into the active tool) ===== -->
+  <div class="panel" id="metricsPanel">
+    <div class="panel-h"><span class="n" style="background:var(--teal)">✚</span><h3>Measurements &amp; BWAT</h3><span class="h-sub">Bates-Jensen · area &amp; healing surveillance</span></div>
+    <div class="panel-b">
+      <div class="section-label">Dimensions <span class="mono" style="font-size:10px;color:var(--muted-2);text-transform:none;letter-spacing:0">area = L × W, auto</span></div>
+      <div class="grid g4 keep" style="margin-top:8px">
+        <div class="field"><label>Length</label><div class="unit-row"><input type="number" step="0.1" min="0" placeholder="0.0" data-metric="length"><span class="u">cm</span></div></div>
+        <div class="field"><label>Width</label><div class="unit-row"><input type="number" step="0.1" min="0" placeholder="0.0" data-metric="width"><span class="u">cm</span></div></div>
+        <div class="field"><label>Depth</label><div class="unit-row"><input type="number" step="0.1" min="0" placeholder="0.0" data-metric="depth"><span class="u">cm</span></div></div>
+        <div class="field"><label>Undermining / tunnel</label><input type="text" placeholder="e.g. 1cm @ 3 o'clock" data-metric="undermining"></div>
+      </div>
+      <div class="metric-strip" id="metricStrip"></div>
+      <div class="section-label" style="margin-top:6px">Bates-Jensen Wound Assessment (BWAT) <span class="mono" style="font-size:10px;color:var(--muted-2);text-transform:none;letter-spacing:0">score each 1 (best) → 5 (worst)</span></div>
+      <div id="bwatItems" style="margin-top:8px"></div>
+      <div id="bwatSummary"></div>
+    </div>
+  </div>
+
+  <!-- ===== SHARED: Clinical decision-support alerts (moved into the active tool) ===== -->
+  <div class="panel" id="cdsPanel">
+    <div class="panel-h"><span class="n" style="background:var(--high)">!</span><h3>Clinical Alerts</h3><span class="h-sub">Automated wound surveillance</span></div>
+    <div class="panel-b"><div class="cds-list" id="cdsList"></div></div>
   </div>
 
   <!-- ================================================================= -->
@@ -428,17 +521,9 @@
     </div>
 
     <div class="panel">
-      <div class="panel-h"><span class="n">2</span><h3>Wound Bed &amp; Measurements</h3><span class="h-sub">MEASURE framework</span></div>
+      <div class="panel-h"><span class="n">2</span><h3>Wound Bed</h3><span class="h-sub">MEASURE framework · dimensions in the BWAT panel</span></div>
       <div class="panel-b">
-        <div class="section-label">Dimensions</div>
-        <div class="grid g4 keep" style="margin-top:8px">
-          <div class="field"><label>Length</label><div class="unit-row"><input type="number" step="0.1" min="0" placeholder="0.0"><span class="u">cm</span></div></div>
-          <div class="field"><label>Width</label><div class="unit-row"><input type="number" step="0.1" min="0" placeholder="0.0"><span class="u">cm</span></div></div>
-          <div class="field"><label>Depth</label><div class="unit-row"><input type="number" step="0.1" min="0" placeholder="0.0"><span class="u">cm</span></div></div>
-          <div class="field"><label>Undermining / tunnel</label><input type="text" placeholder="e.g. 1cm @ 3 o'clock"></div>
-        </div>
-
-        <div class="section-label" style="margin-top:16px">Tissue in wound bed <span class="mono" style="font-size:10px;color:var(--muted-2);text-transform:none;letter-spacing:0">approx %</span></div>
+        <div class="section-label">Tissue in wound bed <span class="mono" style="font-size:10px;color:var(--muted-2);text-transform:none;letter-spacing:0">approx %</span></div>
         <div class="grid g4 keep" style="margin-top:8px">
           <div class="field"><label>Granulation %</label><div class="unit-row"><input type="number" min="0" max="100" placeholder="0"><span class="u">%</span></div></div>
           <div class="field"><label>Epithelial %</label><div class="unit-row"><input type="number" min="0" max="100" placeholder="0"><span class="u">%</span></div></div>
@@ -697,18 +782,11 @@
       </div>
     </div>
 
-    <!-- Wound bed & measurements -->
+    <!-- Wound bed -->
     <div class="panel">
-      <div class="panel-h"><span class="n">3</span><h3>Wound Bed &amp; Measurements</h3><span class="h-sub">MEASURE framework</span></div>
+      <div class="panel-h"><span class="n">3</span><h3>Wound Bed</h3><span class="h-sub">MEASURE framework · dimensions in the BWAT panel</span></div>
       <div class="panel-b">
-        <div class="section-label">Dimensions</div>
-        <div class="grid g4 keep" style="margin-top:8px">
-          <div class="field"><label>Length</label><div class="unit-row"><input type="number" step="0.1" min="0" placeholder="0.0"><span class="u">cm</span></div></div>
-          <div class="field"><label>Width</label><div class="unit-row"><input type="number" step="0.1" min="0" placeholder="0.0"><span class="u">cm</span></div></div>
-          <div class="field"><label>Depth</label><div class="unit-row"><input type="number" step="0.1" min="0" placeholder="0.0"><span class="u">cm</span></div></div>
-          <div class="field"><label>Undermining / tunnel</label><input type="text" placeholder="e.g. 2cm @ 6 o'clock"></div>
-        </div>
-        <div class="section-label" style="margin-top:16px">Tissue in wound bed <span class="mono" style="font-size:10px;color:var(--muted-2);text-transform:none;letter-spacing:0">approx %</span></div>
+        <div class="section-label">Tissue in wound bed <span class="mono" style="font-size:10px;color:var(--muted-2);text-transform:none;letter-spacing:0">approx %</span></div>
         <div class="grid g4 keep" style="margin-top:8px">
           <div class="field"><label>Granulation %</label><div class="unit-row"><input type="number" min="0" max="100" placeholder="0"><span class="u">%</span></div></div>
           <div class="field"><label>Epithelial %</label><div class="unit-row"><input type="number" min="0" max="100" placeholder="0"><span class="u">%</span></div></div>
@@ -883,6 +961,7 @@
 <datalist id="dl-sites"></datalist>
 
 <div class="toast" id="toast"></div>
+<div class="alert-banner" id="alertBanner"></div>
 
 <script>
 /* ---------------- Tabs ---------------- */
@@ -903,8 +982,7 @@ function switchTool(k){
     renderLog();
   }else{
     dock.style.display='';
-    // move shared patient panel to top of active tool
-    tools[k].prepend(patientPanel);
+    placeShared(k);
     document.getElementById('printTitle').textContent=tools[k].dataset.title;
     recalc();
   }
@@ -959,6 +1037,8 @@ function recalc(){
   else if(active==='pi')scorePI();
   else return;
   syncPrintScore();
+  updateHealing();
+  renderCDS();
 }
 
 /* SINBAD + IDSA */
@@ -1074,6 +1154,7 @@ function resetActive(){
   if(active==='dfu'&&footMap){footMap.querySelectorAll('.site').forEach(s=>{s.dataset.state=0;s.classList.remove('felt','notfelt');});updateMono();}
   el.querySelectorAll('[data-pts]').forEach(b=>{b.textContent=b.textContent.includes('/')?'0/1':'–';b.style.color='var(--muted-2)';});
   toolImages[active]=[];renderImgGrid(active);
+  bwatSizeAuto=true;
   recalc();
 }
 
@@ -1238,16 +1319,34 @@ function saveToLog(){
   const p=patients[pv.mrn]||{mrn:pv.mrn,name:'',dob:'',visits:[]};
   if(pv.name)p.name=pv.name;if(pv.dob)p.dob=pv.dob;if(!p.name)p.name='(unnamed)';
   const cap=captureTool(active);
-  p.visits.push({
+  const h=updateHealing()||{};
+  const alerts=evaluateAlerts(h).map(a=>({sev:a.sev,text:a.html.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim()}));
+  // synthetic "Healing metrics" section for the printed record
+  const hi=[];
+  if(h.area!=null)hi.push({label:'Wound area',value:h.area+' cm²'});
+  if(h.reductionPct!=null)hi.push({label:'Area reduction (baseline)',value:h.reductionPct+'%'+(h.weeks!=null?' · week '+h.weeks:'')});
+  if(h.prevPct!=null)hi.push({label:'Area change vs last visit',value:pctTxt(h.prevPct)});
+  if(h.bwat!=null)hi.push({label:'BWAT total',value:h.bwat+'/65 — '+bwatBand(h.bwat).v});
+  if(hi.length)cap.sections.unshift({title:'Healing metrics',items:hi});
+  const visit={
     id:'v'+Date.now(),savedAt:new Date().toISOString(),
-    tool:active,toolTitle:tools[active].dataset.title,
+    tool:active,toolTitle:tools[active].dataset.title,woundLabel:woundLabelVal(),
     date:pv.date||'',visitNo:pv.visitNo||'',nurse:pv.nurse||'',physician:pv.physician||'',specialty:pv.specialty||'',
-    score:cap.score,sections:cap.sections,images:toolImages[active].slice()
-  });
+    score:cap.score,sections:cap.sections,images:toolImages[active].slice(),alerts
+  };
+  if(h.area!=null)visit.area=h.area;
+  if(h.bwat!=null)visit.bwat=h.bwat;
+  if(h.reductionPct!=null)visit.reductionPct=h.reductionPct;
+  if(h.prevPct!=null)visit.prevPct=h.prevPct;
+  if(h.weeks!=null)visit.weeks=h.weeks;
+  if(h.dims)visit.dims=h.dims;
+  p.visits.push(visit);
   patients[pv.mrn]=p;
   if(saveJSON('curanova_patients',patients)){
     toolImages[active]=[];renderImgGrid(active);
+    const crit=alerts.filter(a=>a.sev==='crit');
     toast(isNew?`New record created — ${p.name}`:`Visit ${p.visits.length} added — ${p.name}`);
+    if(crit.length)showAlertBanner(crit);
   }
 }
 
@@ -1283,15 +1382,24 @@ function visitHTML(v){
     sec.items.forEach(it=>{body+=`<div class="vrow"><span class="vk">${esc(it.label)}</span><span class="vv">${esc(it.value)}</span></div>`;});
   });
   if(!body)body='<div class="vrow"><span class="vv">No structured fields recorded.</span></div>';
+  const al=v.alerts||[];
+  let alertsHTML='';
+  if(al.length){const ord={crit:0,warn:1,info:2,good:3};
+    alertsHTML=`<div class="vsec">Clinical alerts</div>`+[...al].sort((a,b)=>ord[a.sev]-ord[b.sev]).map(a=>`<div class="cds-alert cds-${a.sev}" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${CDS_ICON[a.sev]||CDS_ICON.info}</svg><span>${esc(a.text)}</span></div>`).join('');}
   if(v.images&&v.images.length)body+=`<div class="vsec">Wound photography</div><div class="vimg-grid">${v.images.map(u=>`<img src="${escAttr(u)}" alt="wound photo">`).join('')}</div>`;
+  const crit=al.filter(a=>a.sev==='crit').length, warn=al.filter(a=>a.sev==='warn').length;
+  let badges='';
+  if(crit)badges+=`<span class="vbadge b-crit">${crit} critical</span>`;
+  if(warn)badges+=`<span class="vbadge b-warn">${warn} warning</span>`;
   const sc=v.score||{};
   const scoreLine=(sc.num&&sc.num!=='–')?`<div class="vh-score">${esc(sc.num)}<small>${esc((sc.label||'').replace(/ score$/,''))}</small></div>`:'';
   return `<div class="visit"><div class="visit-h" onclick="this.parentElement.classList.toggle('open')">
     <span class="vt ${cls}">${tlabel}</span>
     <div class="vh-main"><div class="vh-title">${esc(v.toolTitle)}${v.visitNo?` · Visit ${esc(v.visitNo)}`:''}</div>
-      <div class="vh-sub">${esc(v.date||fmtDate(v.savedAt))}${v.nurse?` · ${esc(v.nurse)}`:''}${sc.value?` · ${esc(sc.value)}`:''}</div></div>
+      <div class="vh-sub">${esc(v.date||fmtDate(v.savedAt))}${v.nurse?` · ${esc(v.nurse)}`:''}${typeof v.area==='number'?` · ${v.area} cm²`:''}${v.bwat!=null?` · BWAT ${v.bwat}`:''}</div>
+      ${badges?`<div class="vbadges" style="margin-top:4px">${badges}</div>`:''}</div>
     ${scoreLine}<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
-    <div class="visit-b"><div class="vgrid">${body}</div><button class="del-visit" onclick="deleteVisit('${v.id}')">Delete this visit</button></div></div>`;
+    <div class="visit-b"><div class="vgrid">${alertsHTML}${body}</div><button class="del-visit" onclick="deleteVisit('${v.id}')">Delete this visit</button></div></div>`;
 }
 function openPatient(mrn){
   const p=getPatients()[mrn];if(!p)return;openMrn=mrn;
@@ -1307,6 +1415,7 @@ function openPatient(mrn){
     <div class="pt-head"><div class="av">${esc(initials(p.name))}</div>
       <div><h3 class="jakarta">${esc(p.name||'(unnamed)')}</h3>
         <div class="ph-meta"><span class="mono">MRN ${esc(p.mrn)}</span>${p.dob?`<span>DOB <b>${esc(p.dob)}</b></span>`:''}<span><b>${p.visits.length}</b> visit${p.visits.length!==1?'s':''}</span>${md?`<span>Referring: <b>${esc(md.physician)}</b></span>`:''}</div></div></div>
+    ${trajectoryHTML(p)}
     ${[...p.visits].reverse().map(visitHTML).join('')}
   </div></div>`;
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1331,12 +1440,214 @@ function deleteVisit(vid){
 document.addEventListener('click',e=>{const card=e.target.closest('.pt-card');if(card)openPatient(card.dataset.mrn);});
 document.getElementById('logSearch').addEventListener('input',()=>{if(openMrn)closePatient();else renderLog();});
 
+/* =================================================================
+   HEALING METRICS · BWAT · CDS "WOUND ALGORITHMS"  (from workbook)
+   ================================================================= */
+const metricsPanel=document.getElementById('metricsPanel');
+const cdsPanel=document.getElementById('cdsPanel');
+const cdsList=document.getElementById('cdsList');
+const metricStrip=document.getElementById('metricStrip');
+const bwatSummary=document.getElementById('bwatSummary');
+let lastHealing=null, bwatSizeAuto=true;
+
+/* Editable clinical decision-support thresholds */
+const CDS={areaWorsePct:20, bwatRise:3, bwatSevere:45, bwatStalled:31, healWeek:4, healReductionPct:50};
+const CDS_ICON={
+  crit:'<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16v.01"/>',
+  warn:'<path d="M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17v.01"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/>',
+  good:'<path d="M20 6L9 17l-5-5"/>'
+};
+
+/* BWAT (Bates-Jensen) — 13 items 1 (best) → 5 (worst), mirrors workbook "Start Here" */
+const BWAT=[
+ {k:'size', t:'Size (L×W)',          o:['<4 cm²','4–<16 cm²','16–<36 cm²','36–<80 cm²','≥80 cm²']},
+ {k:'depth',t:'Depth',               o:['Erythema, no loss','Partial thickness','Full thickness','Obscured by necrosis','Tendon/joint/bone']},
+ {k:'edges',t:'Edges',               o:['Indistinct/diffuse','Distinct, attached','Not attached','Rolled under (epibole)','Fibrotic/scarred']},
+ {k:'under',t:'Undermining',         o:['None','<2 cm any area','2–4 cm, <50% margin','2–4 cm, >50% margin','>4 cm any area']},
+ {k:'ntype',t:'Necrotic type',       o:['None visible','White/grey non-viable','Loose yellow slough','Adherent soft eschar','Firm black eschar']},
+ {k:'namt', t:'Necrotic amount',     o:['None','<25%','25–50%','>50–<75%','75–100%']},
+ {k:'etype',t:'Exudate type',        o:['None','Bloody','Serosanguineous','Serous','Purulent']},
+ {k:'eamt', t:'Exudate amount',      o:['None','Scant','Small','Moderate','Large']},
+ {k:'skin', t:'Surrounding skin',    o:['Pink / normal','Bright red / blanches','Pallor / hypopigment','Dark red, non-blanch','Black / hyperpigment']},
+ {k:'edema',t:'Peripheral edema',    o:['None','Non-pitting <4 cm','Non-pitting ≥4 cm','Pitting <4 cm','Pitting ≥4 cm / crepitus']},
+ {k:'indur',t:'Peripheral induration',o:['None','<2 cm','2–4 cm, <50%','2–4 cm, ≥50%','>4 cm']},
+ {k:'gran', t:'Granulation',         o:['Intact / resurfaced','Bright red, 75–100%','25–75% fill','Pink/dusky <25%','None present']},
+ {k:'epith',t:'Epithelialization',   o:['100% covered','75–<100%','50–<75%','25–<50%','<25%']}
+];
+function buildBWAT(){
+  document.getElementById('bwatItems').innerHTML=BWAT.map((it,idx)=>`
+    <div class="scored">
+      <div class="scored-h"><span class="t">${idx+1}. ${it.t}</span><span class="pts" data-pts>–</span></div>
+      <div class="opts br">${it.o.map((o,i)=>`<div class="opt"><input type="radio" name="bw_${it.k}" value="${i+1}" id="bw_${it.k}_${i+1}"><label for="bw_${it.k}_${i+1}"><span class="sc">▪ ${i+1}</span>${o}</label></div>`).join('')}</div>
+    </div>`).join('');
+  metricsPanel.addEventListener('change',e=>{if(e.target.name==='bw_size')bwatSizeAuto=false;});
+}
+
+/* place the shared patient / metrics / alerts panels into the active tool */
+function placeShared(k){
+  tools[k].prepend(patientPanel);
+  tools[k].insertBefore(cdsPanel, patientPanel.nextSibling);
+  const photo=tools[k].querySelector('[data-imgdrop]');
+  const photoPanel=photo?photo.closest('.panel'):null;
+  if(photoPanel)tools[k].insertBefore(metricsPanel, photoPanel);else tools[k].appendChild(metricsPanel);
+}
+
+/* live reads */
+function metricInput(name){return metricsPanel.querySelector(`[data-metric="${name}"]`);}
+function numVal(name){const v=parseFloat((metricInput(name)||{}).value);return isFinite(v)?v:null;}
+function woundLabelVal(){const el=patientPanel.querySelector('[data-woundlabel]');return el?(el.value||'').trim():'';}
+function currentWoundKey(){return (woundLabelVal()||tools[active].dataset.title).toLowerCase();}
+function areaBand(a){return a<4?1:a<16?2:a<36?3:a<80?4:5;}
+function pctTxt(p){return (p>0?'+':'')+p+'%';}
+function daysBetween(a,b){return Math.round((new Date(a)-new Date(b))/86400000);}
+function getBWAT(){let total=0,done=0;BWAT.forEach(it=>{const s=metricsPanel.querySelector(`input[name="bw_${it.k}"]:checked`);if(s){done++;total+=+s.value;}});return{total,done,complete:done===13};}
+function priorVisitsForCurrentWound(){
+  const pv=patientFieldValues();if(!pv.mrn)return[];
+  const p=getPatients()[pv.mrn];if(!p)return[];
+  const key=currentWoundKey();
+  return p.visits.filter(v=>((v.woundLabel||v.toolTitle||'').toLowerCase())===key).sort((a,b)=>new Date(a.savedAt)-new Date(b.savedAt));
+}
+function bwatBand(t){
+  if(t<=13)return{v:'Resurfaced / regenerated',c:'var(--ok)',tag:'Healing'};
+  if(t<=20)return{v:'Healing well',c:'var(--low)',tag:'Healing'};
+  if(t<=30)return{v:'Progressing',c:'var(--mild)',tag:'Watch'};
+  if(t<=45)return{v:'Stalled / deteriorating',c:'var(--mod)',tag:'Escalate'};
+  return{v:'Severe / degeneration',c:'var(--severe)',tag:'Escalate'};
+}
+
+/* compute + render measurement strip and BWAT total */
+function updateHealing(){
+  if(!assessTools.includes(active)){lastHealing=null;return null;}
+  const l=numVal('length'),w=numVal('width');
+  const area=(l!=null&&w!=null&&l>0&&w>0)?+(l*w).toFixed(2):null;
+  if(area!=null&&bwatSizeAuto){const r=metricsPanel.querySelector(`input[name="bw_size"][value="${areaBand(area)}"]`);if(r)r.checked=true;}
+  BWAT.forEach(it=>{const first=metricsPanel.querySelector(`input[name="bw_${it.k}"]`);if(!first)return;
+    const s=metricsPanel.querySelector(`input[name="bw_${it.k}"]:checked`);
+    const badge=first.closest('.scored').querySelector('[data-pts]');
+    if(s){badge.textContent=s.value;badge.style.color=+s.value>=4?'var(--high)':+s.value===3?'var(--mod)':'var(--ok)';}
+    else{badge.textContent='–';badge.style.color='var(--muted-2)';}});
+  const bw=getBWAT();
+  const priors=priorVisitsForCurrentWound();
+  const withArea=priors.filter(v=>typeof v.area==='number');
+  const base=withArea[0]||null, prev=withArea[withArea.length-1]||null;
+  const pv=patientFieldValues();
+  const today=pv.date||new Date().toISOString().slice(0,10);
+  let reductionPct=null,prevPct=null,weeks=null;
+  if(area!=null&&base&&base.area>0){reductionPct=Math.round((base.area-area)/base.area*100);weeks=+(daysBetween(today,base.date||base.savedAt)/7).toFixed(1);}
+  if(area!=null&&prev&&prev.area>0){prevPct=Math.round((area-prev.area)/prev.area*100);}
+  renderMetricStrip(area,reductionPct,prevPct,weeks,prev);
+  renderBWATsummary(bw);
+  lastHealing={area,dims:{length:l,width:w,depth:numVal('depth'),undermining:(metricInput('undermining')||{}).value||''},
+    bwat:bw.complete?bw.total:null,bwatDone:bw.done,reductionPct,prevPct,weeks,
+    baseArea:base?base.area:null,prevArea:prev?prev.area:null,prevBwat:prev?prev.bwat:null,priorCount:priors.length};
+  return lastHealing;
+}
+function renderMetricStrip(area,reduction,prevPct,weeks,prev){
+  if(area==null){metricStrip.innerHTML='';return;}
+  let cells=`<div class="metric"><div class="ml">Wound area</div><div class="mv">${area}<small> cm²</small></div><div class="md">L × W</div></div>`;
+  if(reduction!=null)cells+=`<div class="metric"><div class="ml">↓ from baseline</div><div class="mv">${reduction}<small>%</small></div><div class="md ${reduction>=CDS.healReductionPct?'down':''}">${weeks!=null?'week '+weeks:''}</div></div>`;
+  if(prevPct!=null)cells+=`<div class="metric"><div class="ml">vs last visit</div><div class="mv ${prevPct>0?'up':prevPct<0?'down':''}" style="${prevPct>0?'color:var(--high)':prevPct<0?'color:var(--ok)':''}">${pctTxt(prevPct)}</div><div class="md">${prev?fmtDate(prev.date||prev.savedAt):''}</div></div>`;
+  metricStrip.innerHTML=cells;
+}
+function renderBWATsummary(bw){
+  if(!bw.done){bwatSummary.style.display='none';return;}
+  bwatSummary.style.display='';
+  if(!bw.complete){bwatSummary.innerHTML=`<div class="bt" style="color:var(--muted-2)">${bw.done}<small>/13</small></div><div class="bmeta"><div class="bl">BWAT — Bates-Jensen</div><div class="bv" style="color:var(--muted)">Score all 13 items for a total</div></div>`;return;}
+  const band=bwatBand(bw.total);
+  bwatSummary.innerHTML=`<div class="bt">${bw.total}<small>/65</small></div><div class="bmeta"><div class="bl">BWAT total · falling = healing</div><div class="bv">${band.v}</div></div><span class="bchip" style="background:${band.c}">${band.tag}</span>`;
+}
+
+/* the wound algorithms */
+function evaluateAlerts(h){
+  const A=[],add=(sev,html)=>A.push({sev,html});
+  if(h){
+    if(h.prevPct!=null&&h.prevPct>=CDS.areaWorsePct)
+      add('crit',`<b>Wound enlarging:</b> area up <b>${pctTxt(h.prevPct)}</b> since last visit (${h.prevArea} → ${h.area} cm²). Threshold ≥ ${CDS.areaWorsePct}% — notify physician / supervisor.`);
+    if(h.weeks!=null&&h.weeks>=CDS.healWeek&&h.reductionPct!=null&&h.reductionPct<CDS.healReductionPct)
+      add('crit',`<b>Failing to heal:</b> week ${h.weeks} with only <b>${h.reductionPct}%</b> area reduction (target ≥ ${CDS.healReductionPct}% by week ${CDS.healWeek}). Sheehan/Margolis predictor — reassess &amp; escalate.`);
+    else if(h.reductionPct!=null&&h.reductionPct>=CDS.healReductionPct&&h.weeks!=null&&h.weeks<=6)
+      add('good',`<b>On track:</b> ${h.reductionPct}% area reduction by week ${h.weeks} — meets the ≥50% healing predictor.`);
+    if(h.bwat!=null&&h.prevBwat!=null&&(h.bwat-h.prevBwat)>=CDS.bwatRise)
+      add('warn',`<b>BWAT worsening:</b> up ${h.bwat-h.prevBwat} points since last visit (${h.prevBwat} → ${h.bwat}). Reassess dressing, infection &amp; perfusion.`);
+    if(h.bwat!=null&&h.bwat>CDS.bwatSevere)
+      add('crit',`<b>BWAT ${h.bwat}/65 — severe:</b> wound-degeneration range (&gt; ${CDS.bwatSevere}). Escalate to physician / specialist.`);
+    else if(h.bwat!=null&&h.bwat>=CDS.bwatStalled)
+      add('warn',`<b>BWAT ${h.bwat}/65 — stalled:</b> reassess dressing, infection and offloading / perfusion.`);
+  }
+  if(active==='surg'){
+    if([...document.querySelectorAll('#ssiSigns input:checked')].length>=1)
+      add('crit',`<b>Suspected SSI:</b> signs of surgical-site infection present — notify the referring surgeon.`);
+  }else if(active==='dfu'){
+    const idsa=document.querySelector('#tool-dfu [name=idsa]:checked');
+    if(idsa&&idsa.value==='Severe')add('crit',`<b>Severe DFU infection (IWGDF/IDSA 4):</b> systemic toxicity — urgent referral / possible admission.`);
+    else if(idsa&&idsa.value==='Moderate')add('warn',`<b>Moderate DFU infection:</b> deeper / extensive — arrange prompt medical review.`);
+    let sb=0,sbDone=0;document.querySelectorAll('#tool-dfu [data-sinbad] input:checked').forEach(s=>{sb+=+s.value;sbDone++;});
+    if(sbDone===6&&sb>=4)add('warn',`<b>SINBAD ${sb}/6 — high severity:</b> low healing probability — escalate to the multidisciplinary foot team.`);
+    if([...document.querySelectorAll('#footMap .site')].some(s=>+s.dataset.state===2))
+      add('info',`Loss of protective sensation (LOPS) recorded — reinforce daily foot checks &amp; offloading.`);
+  }else if(active==='pi'){
+    const names=['br_sens','br_moist','br_act','br_mob','br_nut','br_fric'];let bt=0,bd=0;
+    names.forEach(n=>{const s=document.querySelector(`#bradenWrap [name=${n}]:checked`);if(s){bt+=+s.value;bd++;}});
+    if(bd===6&&bt<=12)add('warn',`<b>Braden ${bt}/23 — very high risk:</b> aggressive prevention bundle &amp; frequent review.`);
+    const stage=document.querySelector('#piStage input:checked');
+    if(stage&&stage.value==='Stage 4')add('warn',`<b>Stage 4 pressure injury:</b> full-thickness tissue loss — ensure specialist involvement.`);
+  }
+  return A;
+}
+function renderCDS(){
+  if(!assessTools.includes(active))return;
+  const alerts=evaluateAlerts(lastHealing);
+  if(!alerts.length){cdsList.innerHTML=`<div class="cds-none"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>No alerts — measurements and scores are within the expected range for this visit.</div>`;return;}
+  const order={crit:0,warn:1,info:2,good:3};
+  alerts.sort((a,b)=>order[a.sev]-order[b.sev]);
+  cdsList.innerHTML=alerts.map(a=>`<div class="cds-alert cds-${a.sev}"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${CDS_ICON[a.sev]}</svg><span>${a.html}</span></div>`).join('');
+}
+function showAlertBanner(crit){
+  const b=document.getElementById('alertBanner');
+  b.innerHTML=`<button class="ab-close" onclick="this.parentElement.classList.remove('show')">×</button>
+    <h4><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${CDS_ICON.warn}</svg>Saved — ${crit.length} critical alert${crit.length>1?'s':''} flagged for escalation</h4>
+    <ul>${crit.map(a=>`<li>${esc(a.text)}</li>`).join('')}</ul>`;
+  b.classList.add('show');clearTimeout(showAlertBanner._t);showAlertBanner._t=setTimeout(()=>b.classList.remove('show'),9000);
+}
+
+/* trajectory (per wound) in the patient log */
+function sparkline(pts){
+  const w=520,hgt=64,pad=8;
+  const areas=pts.map(p=>p.area),max=Math.max(...areas),min=Math.min(...areas,0);
+  const xs=i=>pts.length===1?w/2:pad+i*(w-2*pad)/(pts.length-1);
+  const ys=a=>{const r=max===min?0.5:(a-min)/(max-min);return hgt-pad-r*(hgt-2*pad);};
+  const line=pts.map((p,i)=>`${i?'L':'M'}${xs(i).toFixed(1)},${ys(p.area).toFixed(1)}`).join(' ');
+  const dots=pts.map((p,i)=>`<circle cx="${xs(i).toFixed(1)}" cy="${ys(p.area).toFixed(1)}" r="3.5" fill="#0D9488"/>`).join('');
+  return `<svg class="spark" viewBox="0 0 ${w} ${hgt}" preserveAspectRatio="none"><path d="${line}" fill="none" stroke="#0D9488" stroke-width="2.5" vector-effect="non-scaling-stroke"/>${dots}</svg>`;
+}
+function trajectoryHTML(p){
+  const groups={};
+  p.visits.forEach(v=>{const key=v.woundLabel||v.toolTitle||'Wound';(groups[key]=groups[key]||[]).push(v);});
+  let out='';
+  Object.entries(groups).forEach(([name,vs])=>{
+    const pts=vs.filter(v=>typeof v.area==='number').sort((a,b)=>new Date(a.savedAt)-new Date(b.savedAt));
+    if(!pts.length)return;
+    const base=pts[0].area, latest=pts[pts.length-1].area, reduction=base>0?Math.round((base-latest)/base*100):0;
+    out+=`<div class="traj"><div class="traj-h"><span class="tt">${esc(name)}</span><span class="ts">${pts.length} measured visit${pts.length!==1?'s':''} · ${base} → ${latest} cm² (${reduction>=0?'↓':'↑'}${Math.abs(reduction)}%)</span></div><div class="traj-b">`;
+    out+= pts.length>=2 ? sparkline(pts) : '<div class="hint">Record another measured visit to plot a healing curve.</div>';
+    out+=`<table class="traj-tbl"><thead><tr><th>Date</th><th>Area cm²</th><th>Δ prev</th><th>↓ base</th><th>BWAT</th></tr></thead><tbody>`;
+    pts.forEach((v,i)=>{const dprev=i>0&&pts[i-1].area>0?Math.round((v.area-pts[i-1].area)/pts[i-1].area*100):null;
+      const dbase=base>0?Math.round((base-v.area)/base*100):null;
+      out+=`<tr><td>${esc(v.date||fmtDate(v.savedAt))}</td><td>${v.area}</td><td class="${dprev>0?'up':dprev<0?'down':''}">${dprev==null?'—':pctTxt(dprev)}</td><td>${dbase==null?'—':dbase+'%'}</td><td>${v.bwat!=null?v.bwat:'—'}</td></tr>`;});
+    out+=`</tbody></table></div></div>`;
+  });
+  return out;
+}
+
 /* ---- init ---- */
+buildBWAT();
+placeShared('surg');
 renderDatalists();
 
 /* ---------------- Wire up ---------------- */
 document.addEventListener('change',recalc);
-document.addEventListener('input',e=>{if(e.target.matches('#ssiSigns input,#ssiDepth input'))recalc();});
+document.addEventListener('input',recalc);   // live updates while typing measurements
 recalc();
 </script>
 </body>

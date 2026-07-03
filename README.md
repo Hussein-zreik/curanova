@@ -11,7 +11,39 @@ server, build step, or install required.
 | **Surgical Wound** | CDC/NHSN classification, MEASURE wound bed, SSI surveillance | Wound class + SSI flag |
 | **Diabetic Foot** | SINBAD, IWGDF/IDSA infection, 10-g monofilament foot map | SINBAD 0–6 |
 | **Pressure Injury** | NPIAP/EPUAP 2019 staging, MEASURE, Braden Scale | Braden 6–23 |
-| **Patient Log** | Saved records, search, per-patient printable history | — |
+| **Patient Log** | Saved records, search, per-wound healing trajectory, printable history | — |
+
+Every assessment also carries a shared **Measurements & BWAT** panel and an
+automated **Clinical Alerts** engine (see below).
+
+## Healing metrics & BWAT (from the workbook)
+
+- **Wound area** auto-calculates from Length × Width (cm²).
+- **BWAT (Bates-Jensen)** — all 13 items scored 1 (best) → 5 (worst), total
+  13–65, with the workbook's status continuum (healing → stalled → severe).
+- A **Wound ID / label** field groups a wound's visits so trends stay per-wound
+  (a patient can have several wounds under one MRN).
+- On save the tool computes **% area reduction from baseline**, **change vs. the
+  previous visit**, and **weeks since baseline**, and draws a **healing
+  trajectory** (sparkline + table) per wound in the Patient Log.
+
+## Clinical Alerts — automated wound algorithms
+
+A decision-support engine evaluates each visit live and on save, and flags the
+nurse without them having to notice manually. Default rules:
+
+| Trigger | Alert |
+|---|---|
+| Wound area ↑ ≥ 20% vs. last visit | **Critical** — enlarging, notify physician |
+| < 50% area reduction by **week 4** (Sheehan/Margolis) | **Critical** — failing to heal, escalate |
+| BWAT total > 45 | **Critical** — severe / degeneration |
+| BWAT ↑ ≥ 3 points vs. last visit | **Warning** — worsening |
+| BWAT 31–45 | **Warning** — stalled |
+| Suspected SSI · IDSA severe/moderate · SINBAD ≥ 4 · Braden ≤ 12 · Stage 4 | Escalation flags |
+
+Thresholds live in the `CDS` object in the script and can be tuned. Critical
+flags raise a banner on save and are stamped onto the visit in the log. (Actual
+supervisor *notification* would require a backend — see below.)
 
 ## Selectable / remembered content
 
