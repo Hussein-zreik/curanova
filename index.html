@@ -264,6 +264,25 @@
   .thumb .rm:hover{background:var(--high)}
   .thumb .cap{position:absolute;left:0;right:0;bottom:0;background:rgba(11,42,67,.72);color:#fff;
     font-size:9.5px;font-family:'IBM Plex Mono';padding:2px 5px;text-align:center}
+  .thumb .edit{position:absolute;top:4px;left:4px;width:22px;height:22px;border:0;border-radius:50%;
+    background:rgba(11,42,67,.72);color:#fff;font-size:12px;line-height:1;cursor:pointer;display:grid;place-items:center;transition:.13s}
+  .thumb .edit:hover{background:var(--teal)}
+
+  /* ---------- annotation editor ---------- */
+  .annot{position:fixed;inset:0;z-index:130;background:rgba(11,42,67,.94);display:none;flex-direction:column;padding:12px}
+  .annot.show{display:flex}
+  .annot-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 6px;color:#fff}
+  .annot-tools,.annot-actions,.annot-colors{display:flex;gap:6px;align-items:center}
+  .annot-actions{margin-left:auto}
+  .atool{appearance:none;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;
+    font-family:'Plus Jakarta Sans';font-weight:600;font-size:12.5px;padding:7px 11px;border-radius:9px;cursor:pointer;transition:.13s}
+  .atool:hover{background:rgba(255,255,255,.18)}
+  .atool.active{background:var(--teal);border-color:var(--teal)}
+  .annot-colors .sw{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.5);cursor:pointer}
+  .annot-colors .sw.active{border-color:#fff;box-shadow:0 0 0 2px var(--navy),0 0 0 4px #fff}
+  .annot-scale{font-size:11.5px;color:#BBD6DF;font-family:'IBM Plex Mono';margin-right:6px}
+  .annot-stage{flex:1;display:grid;place-items:center;overflow:auto;min-height:0}
+  .annot-stage canvas{max-width:100%;max-height:100%;border-radius:8px;box-shadow:var(--shadow-lg);cursor:crosshair;touch-action:none;background:#000}
 
   /* ---------- Log page ---------- */
   .search-wrap{position:relative}
@@ -1239,6 +1258,26 @@
 <div class="alert-banner" id="alertBanner"></div>
 <div class="lightbox" id="lightbox" onclick="this.classList.remove('show')"><img id="lightboxImg" alt="wound photo enlarged"></div>
 
+<!-- ===== Photo annotation / measurement editor ===== -->
+<div class="annot" id="annot">
+  <div class="annot-bar">
+    <div class="annot-tools">
+      <button class="atool active" data-mode="pen" onclick="setAnnotMode('pen')" title="Freehand">✎ Draw</button>
+      <button class="atool" data-mode="line" onclick="setAnnotMode('line')" title="Measure line">📏 Measure</button>
+      <button class="atool" data-mode="calib" onclick="setAnnotMode('calib')" title="Set scale from a known length">⇔ Calibrate</button>
+    </div>
+    <div class="annot-colors" id="annotColors"></div>
+    <div class="annot-actions">
+      <span class="annot-scale" id="annotScale">Scale: not set</span>
+      <button class="atool" onclick="annotUndo()">↶ Undo</button>
+      <button class="atool" onclick="annotClear()">Clear</button>
+      <button class="btn btn-ghost" onclick="closeAnnot()"><span>Cancel</span></button>
+      <button class="btn btn-primary" onclick="annotSave()"><span>Save</span></button>
+    </div>
+  </div>
+  <div class="annot-stage"><canvas id="annotCanvas"></canvas></div>
+</div>
+
 <!-- ===== Secure access gate (only shown when cloud sync is enabled) ===== -->
 <div class="lock" id="lockScreen">
   <div class="lock-card">
@@ -1580,7 +1619,7 @@ function handleFiles(t,files){
 }
 function renderImgGrid(t){
   const grid=document.querySelector(`[data-imggrid="${t}"]`);if(!grid)return;
-  grid.innerHTML=toolImages[t].map((u,i)=>`<div class="thumb"><img src="${u}" alt="wound photo ${i+1}"><button type="button" class="rm" data-imgrm="${t}" data-i="${i}" title="Remove photo">×</button><span class="cap">${i+1}</span></div>`).join('');
+  grid.innerHTML=toolImages[t].map((u,i)=>`<div class="thumb"><img src="${u}" alt="wound photo ${i+1}"><button type="button" class="edit" data-imgedit="${t}" data-i="${i}" title="Annotate / measure">✎</button><button type="button" class="rm" data-imgrm="${t}" data-i="${i}" title="Remove photo">×</button><span class="cap">${i+1}</span></div>`).join('');
 }
 assessTools.forEach(t=>{
   const drop=document.querySelector(`[data-imgdrop="${t}"]`),input=document.querySelector(`[data-imgin="${t}"]`);
@@ -1595,6 +1634,8 @@ assessTools.forEach(t=>{
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-imgrm]');
   if(b){toolImages[b.dataset.imgrm].splice(+b.dataset.i,1);renderImgGrid(b.dataset.imgrm);}
+  const ed=e.target.closest('[data-imgedit]');
+  if(ed){openAnnot(ed.dataset.imgedit,+ed.dataset.i);}
 });
 
 /* ---- capture the active assessment into a structured record ---- */
@@ -2360,6 +2401,77 @@ function restoreDraft(){
   if(any){ recalc(); toast('Unsaved draft restored'); }
 }
 
+/* =================================================================
+   PHOTO ANNOTATION + ON-IMAGE MEASUREMENT
+   ================================================================= */
+const ANNOT_COLORS=['#22D3EE','#F59E0B','#EF4444','#22C55E','#FFFFFF'];
+let annotCtx=null;
+function initAnnotColors(){
+  document.getElementById('annotColors').innerHTML=ANNOT_COLORS.map((c,i)=>`<span class="sw${i===0?' active':''}" style="background:${c}" data-color="${c}" onclick="setAnnotColor('${c}',this)"></span>`).join('');
+}
+function openAnnot(tool,index){
+  const url=toolImages[tool]&&toolImages[tool][index]; if(!url)return;
+  const img=new Image();
+  img.onload=()=>{
+    const canvas=document.getElementById('annotCanvas');
+    let w=img.width,h=img.height;const max=1200;if(w>max||h>max){const s=max/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}
+    canvas.width=w;canvas.height=h;
+    annotCtx={tool,index,img,strokes:[],scale:null,mode:'pen',color:ANNOT_COLORS[0],cur:null};
+    document.querySelectorAll('#annot .atool[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode==='pen'));
+    redrawAnnot();updateAnnotScale();
+    document.getElementById('annot').classList.add('show');
+  };
+  img.onerror=()=>toast('Could not open image',true);
+  img.src=url;
+}
+function closeAnnot(){document.getElementById('annot').classList.remove('show');annotCtx=null;}
+function setAnnotMode(m){if(!annotCtx)return;annotCtx.mode=m;document.querySelectorAll('#annot .atool[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));}
+function setAnnotColor(c,el){if(!annotCtx)return;annotCtx.color=c;document.querySelectorAll('#annotColors .sw').forEach(s=>s.classList.toggle('active',s===el));}
+function annotUndo(){if(annotCtx&&annotCtx.strokes.length){const s=annotCtx.strokes.pop();if(s.type==='calib')recomputeScale();redrawAnnot();}}
+function annotClear(){if(annotCtx){annotCtx.strokes=[];annotCtx.scale=null;redrawAnnot();updateAnnotScale();}}
+function recomputeScale(){annotCtx.scale=null;annotCtx.strokes.filter(s=>s.type==='calib').forEach(s=>{annotCtx.scale=lineLen(s)/s.cm;});updateAnnotScale();}
+function lineLen(s){return Math.hypot(s.b.x-s.a.x,s.b.y-s.a.y);}
+function updateAnnotScale(){document.getElementById('annotScale').textContent=annotCtx&&annotCtx.scale?`Scale: ${annotCtx.scale.toFixed(1)} px/cm`:'Scale: not set';}
+function drawStroke(ctx,s){
+  ctx.strokeStyle=s.color;ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';
+  if(s.type==='pen'){ctx.beginPath();s.points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();}
+  else{ctx.beginPath();ctx.moveTo(s.a.x,s.a.y);ctx.lineTo(s.b.x,s.b.y);ctx.stroke();
+    [s.a,s.b].forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,4,0,7);ctx.fillStyle=s.color;ctx.fill();});
+    const px=lineLen(s);let lbl;
+    if(s.type==='calib')lbl=s.cm+' cm (ref)';
+    else lbl=annotCtx.scale?(px/annotCtx.scale).toFixed(1)+' cm':Math.round(px)+' px';
+    const mx=(s.a.x+s.b.x)/2,my=(s.a.y+s.b.y)/2;
+    ctx.font='bold 16px Inter, sans-serif';const tw=ctx.measureText(lbl).width;
+    ctx.fillStyle='rgba(11,42,67,.82)';ctx.fillRect(mx-tw/2-6,my-22,tw+12,22);
+    ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbl,mx,my-11);ctx.textAlign='left';
+  }
+}
+function redrawAnnot(){
+  if(!annotCtx)return;const c=document.getElementById('annotCanvas'),ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(annotCtx.img,0,0,c.width,c.height);
+  annotCtx.strokes.forEach(s=>drawStroke(ctx,s));if(annotCtx.cur)drawStroke(ctx,annotCtx.cur);
+}
+function annotPt(e){const c=document.getElementById('annotCanvas'),r=c.getBoundingClientRect();return {x:(e.clientX-r.left)*(c.width/r.width),y:(e.clientY-r.top)*(c.height/r.height)};}
+function annotSave(){
+  if(!annotCtx)return;const c=document.getElementById('annotCanvas');
+  try{const url=c.toDataURL('image/jpeg',0.85);toolImages[annotCtx.tool][annotCtx.index]=url;renderImgGrid(annotCtx.tool);toast('Annotated photo saved');}catch(e){toast('Could not save image',true);}
+  closeAnnot();
+}
+function wireAnnotCanvas(){
+  const c=document.getElementById('annotCanvas');if(!c)return;
+  c.addEventListener('pointerdown',e=>{if(!annotCtx)return;c.setPointerCapture(e.pointerId);const p=annotPt(e);
+    if(annotCtx.mode==='pen')annotCtx.cur={type:'pen',color:annotCtx.color,points:[p]};
+    else annotCtx.cur={type:annotCtx.mode,color:annotCtx.color,a:p,b:p};redrawAnnot();});
+  c.addEventListener('pointermove',e=>{if(!annotCtx||!annotCtx.cur)return;const p=annotPt(e);
+    if(annotCtx.cur.type==='pen')annotCtx.cur.points.push(p);else annotCtx.cur.b=p;redrawAnnot();});
+  c.addEventListener('pointerup',e=>{if(!annotCtx||!annotCtx.cur)return;const cur=annotCtx.cur;annotCtx.cur=null;
+    if(cur.type==='calib'){const cm=parseFloat(prompt('Length of this reference line in centimetres?'));
+      if(cm>0){cur.cm=cm;annotCtx.strokes.push(cur);annotCtx.scale=lineLen(cur)/cm;updateAnnotScale();}}
+    else if(cur.type==='line'){if(lineLen(cur)>3)annotCtx.strokes.push(cur);}
+    else annotCtx.strokes.push(cur);
+    redrawAnnot();});
+}
+
 /* ---- body-map location picker ---- */
 function bodySilhouette(){return `
   <circle cx="80" cy="26" r="18" class="bsil"/>
@@ -2392,6 +2504,8 @@ document.addEventListener('click',e=>{ const g=e.target.closest('.bsite'); if(g)
 buildBWAT();
 buildInstruments();
 buildBodyMap();
+initAnnotColors();
+wireAnnotCanvas();
 placeShared('surg');
 renderDatalists();
 restoreDraft();
