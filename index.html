@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CuraNova — Wound Assessment Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B2A43; --navy-2:#12395A; --navy-3:#1B4A70;
+    --teal:#0D9488; --teal-2:#14B8A6; --teal-tint:#ECFDF7; --teal-tint-2:#D6F5EC;
+    --paper:#FFFFFF; --canvas:#EEF2F5; --canvas-2:#F6F8FA;
+    --border:#D6DEE5; --border-2:#E4EAF0;
+    --ink:#16283A; --muted:#5D6E7E; --muted-2:#8394A2;
+    --ok:#12855F; --ok-bg:#E4F5EE;
+    --low:#3E8E5A; --mild:#B7791F; --mod:#DD6B20; --high:#D1483A; --severe:#B02A37;
+    --shadow:0 1px 2px rgba(11,42,67,.04),0 4px 16px rgba(11,42,67,.06);
+    --shadow-lg:0 8px 40px rgba(11,42,67,.12);
+    --r:14px; --r-sm:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:'Inter',system-ui,sans-serif;background:var(--canvas);color:var(--ink);
+    line-height:1.5;font-size:15px;-webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4,.jakarta{font-family:'Plus Jakarta Sans',sans-serif}
+  .mono{font-family:'IBM Plex Mono',monospace}
+
+  /* ---------- Shell ---------- */
+  .wrap{max-width:960px;margin:0 auto;padding:0 16px 120px}
+
+  header.top{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 55%,#134B5E 100%);
+    color:#fff;padding:22px 0 0;position:relative;overflow:hidden;
+  }
+  header.top::after{content:"";position:absolute;right:-60px;top:-60px;width:280px;height:280px;
+    background:radial-gradient(circle,rgba(20,184,166,.28),transparent 65%);pointer-events:none}
+  .top-inner{max-width:960px;margin:0 auto;padding:0 16px}
+  .brand{display:flex;align-items:center;gap:13px;position:relative;z-index:2}
+  .mark{width:42px;height:42px;border-radius:11px;background:linear-gradient(150deg,var(--teal-2),var(--teal));
+    display:grid;place-items:center;flex:none;box-shadow:0 4px 14px rgba(13,148,136,.4)}
+  .mark svg{width:24px;height:24px}
+  .brand-txt h1{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+  .brand-txt p{font-size:12.5px;color:#9FC7D4;font-weight:500;letter-spacing:.02em}
+  .sub{position:relative;z-index:2;margin:16px 0 0;font-size:13px;color:#BBD6DF;max-width:640px;line-height:1.55}
+  .sub b{color:#fff;font-weight:600}
+
+  /* tabs */
+  nav.tabs{display:flex;gap:4px;margin-top:20px;position:relative;z-index:2;overflow-x:auto;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none}
+  nav.tabs::-webkit-scrollbar{display:none}
+  .tab{appearance:none;border:0;background:rgba(255,255,255,.07);color:#CFE2E8;
+    font-family:'Plus Jakarta Sans';font-weight:600;font-size:13.5px;padding:12px 17px;
+    border-radius:11px 11px 0 0;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:8px;
+    transition:background .15s,color .15s;flex:none}
+  .tab:hover{background:rgba(255,255,255,.13);color:#fff}
+  .tab.active{background:var(--canvas);color:var(--navy)}
+  .tab .dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .tab.active .dot{box-shadow:0 0 0 3px rgba(13,148,136,.15)}
+  .d-surg{background:#6366F1}.d-dfu{background:var(--teal)}.d-pi{background:#DD6B20}
+
+  /* ---------- Cards / sections ---------- */
+  .panel{background:var(--paper);border:1px solid var(--border);border-radius:var(--r);
+    box-shadow:var(--shadow);margin-top:18px;overflow:hidden}
+  .panel-h{padding:15px 18px;border-bottom:1px solid var(--border-2);display:flex;align-items:center;gap:11px;
+    background:linear-gradient(180deg,var(--canvas-2),#fff)}
+  .panel-h .n{width:26px;height:26px;border-radius:8px;background:var(--navy);color:#fff;
+    font-family:'IBM Plex Mono';font-weight:600;font-size:13px;display:grid;place-items:center;flex:none}
+  .panel-h h3{font-size:15.5px;font-weight:700;letter-spacing:-.01em}
+  .panel-h .h-sub{font-size:12px;color:var(--muted);font-weight:500;margin-left:auto;text-align:right}
+  .panel-b{padding:18px}
+
+  /* form grid */
+  .grid{display:grid;gap:14px 16px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr 1fr}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:680px){.g2,.g3,.g4{grid-template-columns:1fr}.g4.keep,.g3.keep{grid-template-columns:1fr 1fr}}
+  .field{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .field.span2{grid-column:span 2}
+  @media(max-width:680px){.field.span2{grid-column:auto}}
+  label{font-size:12px;font-weight:600;color:var(--navy-2);letter-spacing:.01em;display:flex;align-items:center;gap:6px}
+  label .tag{font-family:'IBM Plex Mono';font-size:10px;font-weight:600;color:var(--teal);
+    background:var(--teal-tint);padding:1px 6px;border-radius:5px;letter-spacing:.02em}
+  input[type=text],input[type=date],input[type=number],select,textarea{
+    font-family:'Inter';font-size:14px;color:var(--ink);background:#fff;
+    border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;width:100%;
+    transition:border-color .15s,box-shadow .15s}
+  input:focus,select:focus,textarea:focus{outline:0;border-color:var(--teal);
+    box-shadow:0 0 0 3px rgba(13,148,136,.13)}
+  select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%235D6E7E' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer}
+  textarea{resize:vertical;min-height:66px;line-height:1.5}
+  .hint{font-size:11.5px;color:var(--muted-2);line-height:1.45}
+  .unit-row{display:flex;align-items:center;gap:8px}
+  .unit-row .u{font-family:'IBM Plex Mono';font-size:12px;color:var(--muted);flex:none}
+
+  .section-label{font-family:'Plus Jakarta Sans';font-size:12px;font-weight:700;color:var(--navy);
+    text-transform:uppercase;letter-spacing:.06em;margin:4px 0 2px;display:flex;align-items:center;gap:8px}
+  .section-label::after{content:"";height:1px;background:var(--border-2);flex:1}
+
+  /* scored choice rows */
+  .scored{border:1.5px solid var(--border);border-radius:var(--r-sm);overflow:hidden;background:#fff}
+  .scored + .scored{margin-top:10px}
+  .scored-h{display:flex;align-items:center;gap:9px;padding:10px 13px;background:var(--canvas-2);
+    border-bottom:1px solid var(--border-2)}
+  .scored-h .ico{width:22px;height:22px;border-radius:6px;background:var(--teal-tint);
+    display:grid;place-items:center;flex:none}
+  .scored-h .ico svg{width:13px;height:13px;stroke:var(--teal)}
+  .scored-h .t{font-size:13.5px;font-weight:600;color:var(--navy)}
+  .scored-h .t small{display:block;font-weight:500;color:var(--muted);font-size:11px;margin-top:1px}
+  .scored-h .pts{margin-left:auto;font-family:'IBM Plex Mono';font-size:12px;font-weight:600;
+    color:var(--muted-2);flex:none}
+  .opts{display:flex;flex-wrap:wrap;gap:0}
+  .opt{flex:1 1 0;min-width:120px}
+  .opt input{position:absolute;opacity:0;pointer-events:none}
+  .opt label{cursor:pointer;display:flex;flex-direction:column;gap:3px;padding:11px 13px;font-weight:500;
+    font-size:13px;color:var(--ink);border-right:1px solid var(--border-2);border-top:1px solid var(--border-2);
+    height:100%;transition:background .13s;line-height:1.35}
+  .opt:first-child label{border-top:0}
+  .opt label .sc{font-family:'IBM Plex Mono';font-size:10.5px;font-weight:600;color:var(--muted-2);
+    display:flex;align-items:center;gap:5px}
+  .opt input:checked + label{background:var(--teal-tint);color:var(--navy);box-shadow:inset 3px 0 0 var(--teal)}
+  .opt input:checked + label .sc{color:var(--teal)}
+  .opt input:focus-visible + label{box-shadow:inset 0 0 0 2px var(--teal)}
+  @media(max-width:680px){.opt{flex:1 1 100%;min-width:0}.opt label{border-right:0}}
+
+  /* checkbox criteria list */
+  .crit{display:flex;flex-direction:column;gap:2px}
+  .crit .c{display:flex;gap:11px;align-items:flex-start;padding:9px 11px;border-radius:8px;cursor:pointer;
+    transition:background .12s}
+  .crit .c:hover{background:var(--canvas-2)}
+  .crit .c input{margin-top:2px;width:17px;height:17px;accent-color:var(--teal);flex:none;cursor:pointer}
+  .crit .c .cl{font-size:13.5px;line-height:1.4}
+  .crit .c .cl b{font-weight:600;color:var(--navy)}
+  .crit .c .cl span{color:var(--muted);font-size:12.5px}
+
+  /* pill radios (infection grade / class) */
+  .pills{display:flex;flex-direction:column;gap:8px}
+  .pill{position:relative}
+  .pill input{position:absolute;opacity:0}
+  .pill label{cursor:pointer;display:flex;gap:12px;align-items:flex-start;padding:12px 14px;
+    border:1.5px solid var(--border);border-radius:var(--r-sm);transition:.14s;background:#fff}
+  .pill label .lv{font-family:'IBM Plex Mono';font-size:12px;font-weight:600;padding:3px 9px;border-radius:6px;
+    flex:none;background:var(--canvas);color:var(--muted)}
+  .pill .lt{font-size:13.5px}.pill .lt b{font-weight:600;color:var(--navy);display:block;margin-bottom:1px}
+  .pill .lt span{color:var(--muted);font-size:12.5px;line-height:1.4}
+  .pill input:checked + label{border-color:var(--teal);background:var(--teal-tint);box-shadow:0 0 0 3px rgba(13,148,136,.1)}
+  .pill input:checked + label .lv{background:var(--teal);color:#fff}
+  .pill.sev-1 input:checked+label .lv{background:var(--ok)}
+  .pill.sev-2 input:checked+label .lv{background:var(--mild)}
+  .pill.sev-3 input:checked+label .lv{background:var(--mod)}
+  .pill.sev-4 input:checked+label .lv{background:var(--high)}
+
+  /* monofilament foot map */
+  .foot-assess{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
+  @media(max-width:560px){.foot-assess{grid-template-columns:1fr;justify-items:center}}
+  .feet{display:flex;gap:14px}
+  .foot-svg{text-align:center}
+  .foot-svg .fl{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px}
+  .site{cursor:pointer}
+  .site circle{fill:#fff;stroke:var(--muted-2);stroke-width:2;transition:.13s}
+  .site text{font-size:9px;fill:var(--muted);font-family:'IBM Plex Mono'}
+  .site.felt circle{fill:var(--ok);stroke:var(--ok)}
+  .site.notfelt circle{fill:var(--high);stroke:var(--high)}
+  .site.felt text,.site.notfelt text{fill:#fff}
+  .mono-legend{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:9px}
+  .mono-legend .ml{display:flex;align-items:center;gap:8px}
+  .mono-legend .sw{width:14px;height:14px;border-radius:50%;flex:none}
+  .mono-legend .hint2{margin-top:4px;padding:10px 12px;background:var(--canvas-2);border-radius:8px;
+    font-size:11.5px;line-height:1.5}
+
+  /* ---------- Score dock ---------- */
+  .dock{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(255,255,255,.92);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--border);
+    box-shadow:0 -6px 30px rgba(11,42,67,.1)}
+  .dock-in{max-width:960px;margin:0 auto;padding:11px 16px;display:flex;align-items:center;gap:16px}
+  .score-badge{display:flex;align-items:center;gap:13px;flex:1;min-width:0}
+  .score-num{font-family:'IBM Plex Mono';font-weight:600;font-size:30px;line-height:1;color:var(--navy);flex:none}
+  .score-num small{font-size:14px;color:var(--muted-2)}
+  .score-meta{min-width:0}
+  .score-meta .sl{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .score-meta .sv{font-family:'Plus Jakarta Sans';font-weight:700;font-size:15px;line-height:1.2;margin-top:1px;
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .riskchip{font-size:11px;font-weight:700;font-family:'Plus Jakarta Sans';padding:3px 10px;border-radius:20px;color:#fff}
+  .interp{font-size:11.5px;color:var(--muted);line-height:1.35;margin-top:2px;max-width:none}
+  .dock-actions{display:flex;gap:8px;flex:none}
+  .btn{appearance:none;border:0;font-family:'Plus Jakarta Sans';font-weight:600;font-size:13.5px;
+    padding:11px 16px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:.14s}
+  .btn svg{width:15px;height:15px}
+  .btn-primary{background:var(--teal);color:#fff}.btn-primary:hover{background:#0c8579;transform:translateY(-1px)}
+  .btn-ghost{background:var(--canvas);color:var(--navy-2)}.btn-ghost:hover{background:var(--border-2)}
+  @media(max-width:680px){
+    .interp{display:none}.dock-in{gap:10px}
+    .btn span.lbl{display:none}.btn{padding:11px 13px}
+    .score-num{font-size:26px}
+  }
+
+  .tool{display:none}.tool.active{display:block}
+
+  .callout{display:flex;gap:11px;padding:12px 14px;border-radius:var(--r-sm);font-size:12.5px;line-height:1.5;
+    margin-top:2px}
+  .callout svg{width:17px;height:17px;flex:none;margin-top:1px}
+  .callout.info{background:#EAF3FB;color:#1C4E7A}.callout.info svg{stroke:#2C7BC0}
+  .callout.warn{background:#FEF3EC;color:#8A4B12}.callout.warn svg{stroke:#DD6B20}
+
+  .legend-src{font-size:11px;color:var(--muted-2);margin-top:20px;line-height:1.6;padding:14px 16px;
+    background:var(--paper);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+  .legend-src b{color:var(--navy-2)}
+  .legend-src a{color:var(--teal);text-decoration:none}
+
+  .print-head{display:none}
+
+  /* ---------- print ---------- */
+  @media print{
+    body{background:#fff;font-size:11px}
+    header.top,nav.tabs,.dock,.sub,.legend-src,.no-print{display:none!important}
+    .wrap{max-width:100%;padding:0}
+    .tool:not(.active){display:none}
+    .print-head{display:flex;align-items:center;gap:10px;padding:0 0 10px;border-bottom:2px solid var(--navy);
+      margin-bottom:12px}
+    .print-head .pm{width:30px;height:30px;border-radius:7px;background:var(--navy);display:grid;place-items:center}
+    .print-head .pm svg{width:18px;height:18px}
+    .print-head h2{font-size:15px}.print-head p{font-size:10px;color:#555}
+    .print-head .pr{margin-left:auto;font-size:10px;color:#555;text-align:right}
+    .panel{box-shadow:none;border:1px solid #bbb;break-inside:avoid;margin-top:10px}
+    .panel-h{background:#f0f3f5}
+    .opt input:checked + label{box-shadow:inset 3px 0 0 #000;background:#eef7f4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .pill input:checked+label{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .print-score{display:flex!important}
+  }
+  .print-score{display:none;align-items:center;gap:14px;padding:12px 16px;border:2px solid var(--navy);
+    border-radius:10px;margin-top:12px}
+
+  /* ---------- list-input (typeahead + add) ---------- */
+  .list-input{display:flex;gap:6px;align-items:stretch}
+  .list-input input{flex:1;min-width:0}
+  .addbtn{appearance:none;border:1.5px solid var(--border);background:var(--canvas-2);color:var(--teal);
+    font-family:'Plus Jakarta Sans';font-weight:700;font-size:16px;line-height:1;border-radius:var(--r-sm);
+    padding:0 12px;cursor:pointer;flex:none;transition:.14s;display:grid;place-items:center}
+  .addbtn:hover{background:var(--teal-tint);border-color:var(--teal)}
+  .addbtn:active{transform:scale(.96)}
+
+  /* ---------- image upload ---------- */
+  .img-drop{border:1.5px dashed var(--border);border-radius:var(--r-sm);background:var(--canvas-2);
+    padding:16px;text-align:center;cursor:pointer;transition:.14s}
+  .img-drop:hover{border-color:var(--teal);background:var(--teal-tint)}
+  .img-drop.drag{border-color:var(--teal);background:var(--teal-tint-2)}
+  .img-drop svg{width:26px;height:26px;stroke:var(--teal);margin-bottom:6px}
+  .img-drop .il{font-size:13px;font-weight:600;color:var(--navy-2)}
+  .img-drop .is{font-size:11.5px;color:var(--muted-2);margin-top:2px}
+  .img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-top:12px}
+  .img-grid:empty{display:none}
+  .thumb{position:relative;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--border);
+    aspect-ratio:1;background:var(--canvas)}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb .rm{position:absolute;top:4px;right:4px;width:22px;height:22px;border:0;border-radius:50%;
+    background:rgba(11,42,67,.72);color:#fff;font-size:14px;line-height:1;cursor:pointer;display:grid;
+    place-items:center;transition:.13s}
+  .thumb .rm:hover{background:var(--high)}
+  .thumb .cap{position:absolute;left:0;right:0;bottom:0;background:rgba(11,42,67,.72);color:#fff;
+    font-size:9.5px;font-family:'IBM Plex Mono';padding:2px 5px;text-align:center}
+
+  /* ---------- Log page ---------- */
+  .search-wrap{position:relative}
+  .search-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;
+    stroke:var(--muted-2);pointer-events:none}
+  .search-wrap input{padding-left:38px;font-size:15px}
+  .log-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .log-count{font-size:12px;color:var(--muted);margin-left:auto;font-weight:600}
+  .log-list{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+  .pt-card{border:1.5px solid var(--border);border-radius:var(--r-sm);padding:13px 15px;cursor:pointer;
+    background:#fff;transition:.14s;display:flex;align-items:center;gap:14px}
+  .pt-card:hover{border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,148,136,.08)}
+  .pt-card .av{width:40px;height:40px;border-radius:11px;background:var(--navy);color:#fff;flex:none;
+    display:grid;place-items:center;font-family:'Plus Jakarta Sans';font-weight:700;font-size:15px}
+  .pt-card .pc-main{min-width:0;flex:1}
+  .pt-card .pc-name{font-family:'Plus Jakarta Sans';font-weight:700;font-size:14.5px;color:var(--navy)}
+  .pt-card .pc-meta{font-size:12px;color:var(--muted);margin-top:1px;display:flex;gap:10px;flex-wrap:wrap}
+  .pt-card .pc-meta .mrn{font-family:'IBM Plex Mono';color:var(--teal);font-weight:600}
+  .pt-card .pc-visits{flex:none;text-align:right}
+  .pt-card .pc-visits b{font-family:'IBM Plex Mono';font-size:18px;color:var(--navy);display:block;line-height:1}
+  .pt-card .pc-visits span{font-size:10px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.04em}
+  .log-empty{text-align:center;padding:40px 20px;color:var(--muted-2)}
+  .log-empty svg{width:38px;height:38px;stroke:var(--border);margin-bottom:10px}
+  .log-empty .le-t{font-size:14px;font-weight:600;color:var(--muted);font-family:'Plus Jakarta Sans'}
+
+  .pt-detail{margin-top:2px}
+  .pt-head{display:flex;align-items:flex-start;gap:15px;padding-bottom:14px;border-bottom:1px solid var(--border-2)}
+  .pt-head .av{width:52px;height:52px;border-radius:13px;background:linear-gradient(150deg,var(--teal-2),var(--teal));
+    color:#fff;flex:none;display:grid;place-items:center;font-family:'Plus Jakarta Sans';font-weight:800;font-size:19px}
+  .pt-head h3{font-size:19px;font-weight:800;letter-spacing:-.01em}
+  .pt-head .ph-meta{font-size:12.5px;color:var(--muted);margin-top:4px;display:flex;gap:8px 16px;flex-wrap:wrap}
+  .pt-head .ph-meta b{color:var(--navy-2);font-weight:600}
+  .pt-head .ph-meta .mono{font-family:'IBM Plex Mono';color:var(--teal)}
+  .visit{border:1px solid var(--border);border-radius:var(--r-sm);margin-top:12px;overflow:hidden}
+  .visit-h{display:flex;align-items:center;gap:11px;padding:11px 14px;background:var(--canvas-2);
+    border-bottom:1px solid var(--border-2);cursor:pointer}
+  .visit-h .vt{font-family:'IBM Plex Mono';font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;
+    color:#fff;flex:none}
+  .vt-surg{background:#6366F1}.vt-dfu{background:var(--teal)}.vt-pi{background:var(--mod)}
+  .visit-h .vh-main{flex:1;min-width:0}
+  .visit-h .vh-title{font-weight:700;font-size:13.5px;color:var(--navy)}
+  .visit-h .vh-sub{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .visit-h .vh-score{font-family:'IBM Plex Mono';font-weight:600;font-size:15px;color:var(--navy);flex:none;text-align:right}
+  .visit-h .vh-score small{font-size:10px;color:var(--muted-2);display:block;font-family:'Inter';font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  .visit-b{padding:14px 16px;display:none}
+  .visit.open .visit-b{display:block}
+  .visit-h .chev{transition:transform .15s;stroke:var(--muted-2)}
+  .visit.open .visit-h .chev{transform:rotate(180deg)}
+  .vgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px 22px}
+  @media(max-width:680px){.vgrid{grid-template-columns:1fr}}
+  .vrow{display:flex;gap:10px;font-size:12.5px;padding:4px 0;border-bottom:1px dashed var(--border-2);line-height:1.4}
+  .vrow .vk{color:var(--muted);flex:none;min-width:130px}
+  .vrow .vv{color:var(--ink);font-weight:500}
+  .vsec{font-family:'Plus Jakarta Sans';font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;
+    letter-spacing:.05em;margin:14px 0 5px;grid-column:1/-1}
+  .vsec:first-child{margin-top:0}
+  .vimg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:8px;grid-column:1/-1}
+  .vimg-grid img{width:100%;border-radius:8px;border:1px solid var(--border);display:block}
+  .del-visit{margin-top:12px;font-size:12px;color:var(--high);background:none;border:0;cursor:pointer;
+    font-weight:600;padding:6px 0}
+  .del-visit:hover{text-decoration:underline}
+
+  .toast{position:fixed;left:50%;bottom:80px;transform:translate(-50%,20px);z-index:60;background:var(--navy);
+    color:#fff;padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:600;font-family:'Plus Jakarta Sans';
+    box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:.25s;display:flex;align-items:center;gap:9px}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .toast svg{width:17px;height:17px;stroke:var(--teal-2)}
+  .toast.err svg{stroke:#FCA5A5}
+
+  @media print{
+    #tool-log.active .no-print-log{display:none!important}
+    #tool-log.active .pt-detail .visit-b{display:block!important}
+    #tool-log.active .pt-detail .chev{display:none}
+    #tool-log.active .del-visit{display:none!important}
+    .log-print-head{display:flex!important}
+  }
+  .log-print-head{display:none;align-items:center;gap:10px;padding:0 0 10px;border-bottom:2px solid var(--navy);
+    margin-bottom:12px}
+  .log-print-head .pm{width:30px;height:30px;border-radius:7px;background:var(--navy);display:grid;place-items:center}
+  .log-print-head .pm svg{width:18px;height:18px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.35-9.5-9C1 9 2.5 5 6 5c2 0 3.2 1.2 4 2.5C10.8 6.2 12 5 14 5c1.2 0 2.2.4 3 1.1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 12.5h2l1.5-3 2 6 1.5-3h1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="brand-txt">
+        <h1>CuraNova</h1>
+        <p>Wound Assessment Tool · Home Nursing</p>
+      </div>
+    </div>
+    <p class="sub">Standardised, guideline-based wound assessment for field documentation. Each module auto-calculates a <b>validated severity score</b> and generates a printable record for the referring physician. Built on <b>IWGDF 2023</b>, <b>IWGDF/IDSA</b>, <b>ADA Standards of Care 2025</b>, <b>NPIAP/EPUAP 2019</b>, <b>CDC/NHSN</b> and the <b>Braden Scale</b>.</p>
+    <nav class="tabs">
+      <button class="tab active" data-tool="surg"><span class="dot d-surg"></span>Surgical Wound</button>
+      <button class="tab" data-tool="dfu"><span class="dot d-dfu"></span>Diabetic Foot</button>
+      <button class="tab" data-tool="pi"><span class="dot d-pi"></span>Pressure Injury</button>
+      <button class="tab" data-tool="log" style="margin-left:auto"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2.4"/><path d="M22.6 21.6L21 20"/></svg>Patient Log</button>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- shared patient header prints on each -->
+  <div class="print-head">
+    <div class="pm"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.35-9.5-9C1 9 2.5 5 6 5c2 0 3.2 1.2 4 2.5C10.8 6.2 12 5 14 5c1.2 0 2.2.4 3 1.1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 12.5h2l1.5-3 2 6 1.5-3h1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div><h2 class="jakarta" id="printTitle">Wound Assessment</h2><p>CuraNova Home Nursing — Advanced Wound Care</p></div>
+    <div class="pr">Assessment date: ___________<br>Clinician: ___________________</div>
+  </div>
+
+  <!-- ============ PATIENT / VISIT (shared, shown in all tools via clone) ============ -->
+  <div class="panel" id="patientPanel">
+    <div class="panel-h"><span class="n">i</span><h3>Patient &amp; Visit</h3><span class="h-sub">Completed by the attending nurse at each visit</span></div>
+    <div class="panel-b">
+      <div class="grid g3 keep">
+        <div class="field span2"><label>Patient name</label><input type="text" placeholder="Full name"></div>
+        <div class="field"><label>File / MRN</label><input type="text" placeholder="ID"></div>
+        <div class="field"><label>Date of birth</label><input type="date"></div>
+        <div class="field"><label>Assessment date <span class="tag">req</span></label><input type="date"></div>
+        <div class="field"><label>Visit #</label><input type="number" min="1" placeholder="e.g. 1"></div>
+        <div class="field"><label>Attending nurse</label>
+          <div class="list-input"><input type="text" list="dl-nurses" data-remember="nurses" placeholder="Name"><button type="button" class="addbtn" data-addlist="nurses" title="Save this name to the list">＋</button></div></div>
+        <div class="field"><label>Referring physician</label>
+          <div class="list-input"><input type="text" list="dl-physicians" data-remember="physicians" placeholder="Dr."><button type="button" class="addbtn" data-addlist="physicians" title="Save this physician to the list">＋</button></div></div>
+        <div class="field"><label>Specialty</label><input type="text" list="dl-specialties" data-remember="specialties" placeholder="Select or type…"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- ==================== TOOL 1: SURGICAL WOUND ====================== -->
+  <!-- ================================================================= -->
+  <section class="tool active" id="tool-surg" data-title="Surgical Wound Assessment">
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">1</span><h3>Wound Identification</h3><span class="h-sub">CDC/NHSN surgical wound class</span></div>
+      <div class="panel-b">
+        <div class="grid g2">
+          <div class="field"><label>Procedure / operation</label>
+            <div class="list-input"><input type="text" list="dl-procedures" data-remember="procedures" placeholder="Select or type…"><button type="button" class="addbtn" data-addlist="procedures" title="Save this procedure to the list">＋</button></div></div>
+          <div class="field"><label>Laterality</label>
+            <select><option value="">Select…</option><option>Right</option><option>Left</option><option>Bilateral</option><option>Midline / central</option><option>Not applicable</option></select></div>
+          <div class="field"><label>Date of surgery</label><input type="date"></div>
+          <div class="field"><label>Incision site / location</label>
+            <div class="list-input"><input type="text" list="dl-sites" data-remember="sites" placeholder="Select or type…"><button type="button" class="addbtn" data-addlist="sites" title="Save this site to the list">＋</button></div></div>
+          <div class="field"><label>Closure method</label>
+            <select><option value="">Select…</option><option>Primary — sutures</option><option>Primary — staples</option><option>Primary — adhesive/glue</option><option>Secondary intention (left open)</option><option>Delayed primary closure</option><option>Negative-pressure (NPWT)</option></select></div>
+        </div>
+
+        <div class="section-label" style="margin-top:18px">Surgical wound classification <span class="mono" style="font-size:10px;color:var(--muted-2);text-transform:none;letter-spacing:0">CDC — determines baseline SSI risk</span></div>
+        <div class="pills" id="surgClass" style="margin-top:8px">
+          <div class="pill"><input type="radio" name="sclass" id="sc1" value="I" data-risk="1–5% SSI risk"><label for="sc1"><span class="lv">I</span><span class="lt"><b>Clean</b><span>Uninfected; no inflammation; respiratory/GI/GU tracts not entered. e.g. hernia, breast, vascular.</span></span></label></div>
+          <div class="pill"><input type="radio" name="sclass" id="sc2" value="II" data-risk="3–11% SSI risk"><label for="sc2"><span class="lv">II</span><span class="lt"><b>Clean-contaminated</b><span>Controlled entry of GI/respiratory/GU tract, no unusual contamination. e.g. elective colon, biliary.</span></span></label></div>
+          <div class="pill"><input type="radio" name="sclass" id="sc3" value="III" data-risk="10–17% SSI risk"><label for="sc3"><span class="lv">III</span><span class="lt"><b>Contaminated</b><span>Open/fresh trauma, major break in sterile technique, or gross GI spillage.</span></span></label></div>
+          <div class="pill"><input type="radio" name="sclass" id="sc4" value="IV" data-risk="&gt;27% SSI risk"><label for="sc4"><span class="lv">IV</span><span class="lt"><b>Dirty-infected</b><span>Existing infection, perforated viscus, or devitalised tissue present before surgery.</span></span></label></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">2</span><h3>Wound Bed &amp; Measurements</h3><span class="h-sub">MEASURE framework</span></div>
+      <div class="panel-b">
+        <div class="section-label">Dimensions</div>
+        <div class="grid g4 keep" style="margin-top:8px">
+          <div class="field"><label>Length</label><div class="unit-row"><input type="number" step="0.1" min="0" placeholder="0.0"><span class="u">cm</span></div></div>
+          <div class="field"><label>Width</label><div class="unit-row"><input type="number" step="0.1" min="0" placeholder="0.0"><span class="u">cm</span></div></div>
+          <div class="field"><label>Depth</label><div class="unit-row"><input type="number" step="0.1" min="0" placeholder="0.0"><span class="u">cm</span></div></div>
+          <div class="field"><label>Undermining / tunnel</label><input type="text" placeholder="e.g. 1cm @ 3 o'clock"></div>
+        </div>
+
+        <div class="section-label" style="margin-top:16px">Tissue in wound bed <span class="mono" style="font-size:10px;color:var(--muted-2);text-transform:none;letter-spacing:0">approx %</span></div>
+        <div class="grid g4 keep" style="margin-top:8px">
+          <div class="field"><label>Granulation %</label><div class="unit-row"><input type="number" min="0" max="100" placeholder="0"><span class="u">%</span></div></div>
+          <div class="field"><label>Epithelial %</label><div class="unit-row"><input type="number" min="0" max="100" placeholder="0"><span class="u">%</span></div></div>
+          <div class="field"><label>Slough %</label><div class="unit-row"><input type="number" min="0" max="100" placeholder="0"><span class="u">%</span></div></div>
+          <div class="field"><label>Necrotic/eschar %</label><div class="unit-row"><input type="number" min="0" max="100" placeholder="0"><span class="u">%</span></div></div>
+        </div>
+
+        <div class="grid g3 keep" style="margin-top:16px">
+          <div class="field"><label>Exudate amount</label><select><option value="">Select…</option><option>None</option><option>Scant</option><option>Small / low</option><option>Moderate</option><option>Large / high</option></select></div>
+          <div class="field"><label>Exudate type</label><select><option value="">Select…</option><option>Serous (clear)</option><option>Serosanguineous</option><option>Sanguineous (bloody)</option><option>Purulent</option><option>Haemopurulent</option></select></div>
+          <div class="field"><label>Odour</label><select><option value="">Select…</option><option>None</option><option>Faint after cleansing</option><option>Strong / persistent</option></select></div>
+          <div class="field"><label>Wound edges</label><select><option value="">Select…</option><option>Attached / advancing</option><option>Not attached</option><option>Rolled (epibole)</option><option>Macerated</option><option>Dehisced</option></select></div>
+          <div class="field"><label>Periwound skin</label><select><option value="">Select…</option><option>Intact / healthy</option><option>Erythema</option><option>Macerated</option><option>Indurated</option><option>Ecchymotic</option></select></div>
+          <div class="field"><label>Pain (0–10)</label><div class="unit-row"><input type="number" min="0" max="10" placeholder="0"><span class="u">/10</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">3</span><h3>SSI Surveillance</h3><span class="h-sub">CDC/NHSN criteria — auto-flag</span></div>
+      <div class="panel-b">
+        <div class="callout info"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg><span>Tick any sign present. If criteria are met the tool flags a <b>suspected SSI</b> and its depth — this is a surveillance prompt to notify the surgeon, not a substitute for physician diagnosis.</span></div>
+
+        <div class="section-label" style="margin-top:14px">Onset timing</div>
+        <div class="grid g2" style="margin-top:8px">
+          <div class="field"><label>Days since surgery</label><input type="number" min="0" placeholder="e.g. 8"></div>
+          <div class="field"><label>Implant/prosthesis in situ?</label><select><option>No</option><option>Yes</option></select></div>
+        </div>
+
+        <div class="section-label" style="margin-top:16px">Signs of infection</div>
+        <div class="crit" id="ssiSigns" style="margin-top:6px">
+          <label class="c"><input type="checkbox" data-w="sign"><span class="cl"><b>Purulent drainage</b> <span>from the incision or a drain</span></span></label>
+          <label class="c"><input type="checkbox" data-w="sign"><span class="cl"><b>Positive culture</b> <span>organism from aseptically-obtained fluid/tissue</span></span></label>
+          <label class="c"><input type="checkbox" data-w="sign"><span class="cl"><b>Localised signs</b> <span>pain/tenderness, swelling, erythema or warmth</span></span></label>
+          <label class="c"><input type="checkbox" data-w="sign"><span class="cl"><b>Fever</b> <span>&gt; 38 °C attributable to the wound</span></span></label>
+        </div>
+
+        <div class="section-label" style="margin-top:14px">Depth of involvement</div>
+        <div class="crit" id="ssiDepth" style="margin-top:6px">
+          <label class="c"><input type="checkbox" data-w="superficial"><span class="cl"><b>Skin &amp; subcutaneous only</b> <span>→ Superficial incisional SSI</span></span></label>
+          <label class="c"><input type="checkbox" data-w="deep"><span class="cl"><b>Fascia / muscle involved</b> <span>deep incision reopened or abscess → Deep incisional SSI</span></span></label>
+          <label class="c"><input type="checkbox" data-w="organ"><span class="cl"><b>Organ / body space</b> <span>drainage or abscess in the operative space → Organ/space SSI</span></span></label>
+          <label class="c"><input type="checkbox" data-w="dehisc"><span class="cl"><b>Wound dehiscence</b> <span>spontaneous separation of wound edges</span></span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">4</span><h3>Care &amp; Plan</h3></div>
+      <div class="panel-b">
+        <div class="grid g2">
+          <div class="field"><label>Cleansing</label><input type="text" placeholder="e.g. Normal saline irrigation"></div>
+          <div class="field"><label>Primary dressing</label><input type="text" placeholder="e.g. Hydrofiber + foam"></div>
+          <div class="field"><label>Next visit / frequency</label><input type="text" placeholder="e.g. 48 h"></div>
+          <div class="field"><label>Physician notified?</label><select><option>Not required</option><option>Yes — routine update</option><option>Yes — urgent (suspected SSI)</option></select></div>
+        </div>
+        <div class="field span2" style="margin-top:14px"><label>Clinical notes &amp; plan</label><textarea placeholder="Assessment summary, changes since last visit, patient/family education given, escalation…"></textarea></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">5</span><h3>Wound Photography</h3><span class="h-sub">Attach clinical images</span></div>
+      <div class="panel-b">
+        <div class="img-drop" data-imgdrop="surg">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L8 6H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-4l-1.5-2z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          <div class="il">Add wound photo(s)</div>
+          <div class="is">Tap to capture or upload · JPG/PNG · stored with this visit</div>
+        </div>
+        <input type="file" accept="image/*" capture="environment" multiple hidden data-imgin="surg">
+        <div class="img-grid" data-imggrid="surg"></div>
+      </div>
+    </div>
+
+    <div class="print-score" data-for="surg"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- ==================== TOOL 2: DIABETIC FOOT ====================== -->
+  <!-- ================================================================= -->
+  <section class="tool" id="tool-dfu" data-title="Diabetic Foot Ulcer Assessment">
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">1</span><h3>Diabetes &amp; Ulcer Context</h3></div>
+      <div class="panel-b">
+        <div class="grid g3 keep">
+          <div class="field"><label>Diabetes type</label><select><option value="">Select…</option><option>Type 1</option><option>Type 2</option></select></div>
+          <div class="field"><label>Latest HbA1c</label><div class="unit-row"><input type="number" step="0.1" placeholder="0.0"><span class="u">%</span></div></div>
+          <div class="field"><label>Affected foot</label><select><option value="">Select…</option><option>Right</option><option>Left</option><option>Bilateral</option></select></div>
+          <div class="field"><label>Ulcer location</label><input type="text" placeholder="e.g. Plantar 1st MTH"></div>
+          <div class="field"><label>Duration of ulcer</label><input type="text" placeholder="e.g. 3 weeks"></div>
+          <div class="field"><label>Prior ulcer / amputation?</label><select><option value="">Select…</option><option>No</option><option>Prior ulcer</option><option>Prior minor amputation</option><option>Prior major amputation</option></select></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SINBAD -->
+    <div class="panel">
+      <div class="panel-h"><span class="n">2</span><h3>SINBAD Classification</h3><span class="h-sub">IWGDF 2023 · primary system · score 0–6</span></div>
+      <div class="panel-b">
+        <div class="callout info"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg><span>IWGDF recommends <b>SINBAD as the first-line system</b> for communicating ulcer severity. Record the presence/absence of each variable — not just the total. Higher score = lower chance of healing.</span></div>
+
+        <div style="margin-top:14px">
+          <div class="scored">
+            <div class="scored-h"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 21s-7-5-7-11a7 7 0 0114 0c0 6-7 11-7 11z"/><circle cx="12" cy="10" r="2"/></svg></span><span class="t">S — Site<small>Location of the ulcer</small></span><span class="pts" data-pts>0/1</span></div>
+            <div class="opts" data-sinbad="site">
+              <div class="opt"><input type="radio" name="sb_site" id="sb_s0" value="0"><label for="sb_s0"><span class="sc">▪ 0 pts</span>Forefoot</label></div>
+              <div class="opt"><input type="radio" name="sb_site" id="sb_s1" value="1"><label for="sb_s1"><span class="sc">▪ 1 pt</span>Midfoot or hindfoot</label></div>
+            </div>
+          </div>
+
+          <div class="scored">
+            <div class="scored-h"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span><span class="t">I — Ischaemia<small>Pedal perfusion (palpate DP &amp; PT)</small></span><span class="pts" data-pts>0/1</span></div>
+            <div class="opts" data-sinbad="isch">
+              <div class="opt"><input type="radio" name="sb_isch" id="sb_i0" value="0"><label for="sb_i0"><span class="sc">▪ 0 pts</span>Pedal flow intact — ≥1 palpable pulse</label></div>
+              <div class="opt"><input type="radio" name="sb_isch" id="sb_i1" value="1"><label for="sb_i1"><span class="sc">▪ 1 pt</span>Clinical evidence of reduced flow</label></div>
+            </div>
+          </div>
+
+          <div class="scored">
+            <div class="scored-h"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 12h4l2-6 4 12 2-6h4"/></svg></span><span class="t">N — Neuropathy<small>Protective sensation (10-g monofilament)</small></span><span class="pts" data-pts>0/1</span></div>
+            <div class="opts" data-sinbad="neuro">
+              <div class="opt"><input type="radio" name="sb_neuro" id="sb_n0" value="0"><label for="sb_n0"><span class="sc">▪ 0 pts</span>Protective sensation intact</label></div>
+              <div class="opt"><input type="radio" name="sb_neuro" id="sb_n1" value="1"><label for="sb_n1"><span class="sc">▪ 1 pt</span>Protective sensation lost</label></div>
+            </div>
+          </div>
+
+          <div class="scored">
+            <div class="scored-h"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg></span><span class="t">B — Bacterial infection<small>Signs of local infection</small></span><span class="pts" data-pts>0/1</span></div>
+            <div class="opts" data-sinbad="bact">
+              <div class="opt"><input type="radio" name="sb_bact" id="sb_b0" value="0"><label for="sb_b0"><span class="sc">▪ 0 pts</span>None</label></div>
+              <div class="opt"><input type="radio" name="sb_bact" id="sb_b1" value="1"><label for="sb_b1"><span class="sc">▪ 1 pt</span>Present</label></div>
+            </div>
+          </div>
+
+          <div class="scored">
+            <div class="scored-h"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M9 4v16"/></svg></span><span class="t">A — Area<small>Measure length × width</small></span><span class="pts" data-pts>0/1</span></div>
+            <div class="opts" data-sinbad="area">
+              <div class="opt"><input type="radio" name="sb_area" id="sb_a0" value="0"><label for="sb_a0"><span class="sc">▪ 0 pts</span>Ulcer &lt; 1 cm²</label></div>
+              <div class="opt"><input type="radio" name="sb_area" id="sb_a1" value="1"><label for="sb_a1"><span class="sc">▪ 1 pt</span>Ulcer ≥ 1 cm²</label></div>
+            </div>
+          </div>
+
+          <div class="scored">
+            <div class="scored-h"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 8v8M20 8v8M8 20h8M8 4h8" opacity=".4"/><path d="M12 6v12"/></svg></span><span class="t">D — Depth<small>Probe to depth</small></span><span class="pts" data-pts>0/1</span></div>
+            <div class="opts" data-sinbad="depth">
+              <div class="opt"><input type="radio" name="sb_depth" id="sb_d0" value="0"><label for="sb_d0"><span class="sc">▪ 0 pts</span>Confined to skin &amp; subcutaneous</label></div>
+              <div class="opt"><input type="radio" name="sb_depth" id="sb_d1" value="1"><label for="sb_d1"><span class="sc">▪ 1 pt</span>Reaches muscle, tendon or deeper</label></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IWGDF/IDSA infection -->
+    <div class="panel">
+      <div class="panel-h"><span class="n">3</span><h3>Infection Severity</h3><span class="h-sub">IWGDF/IDSA classification</span></div>
+      <div class="panel-b">
+        <div class="pills" style="margin-top:2px">
+          <div class="pill sev-1"><input type="radio" name="idsa" id="id1" value="Uninfected"><label for="id1"><span class="lv">1</span><span class="lt"><b>Uninfected</b><span>No purulence or any signs of inflammation.</span></span></label></div>
+          <div class="pill sev-2"><input type="radio" name="idsa" id="id2" value="Mild"><label for="id2"><span class="lv">2 · Mild</span><span class="lt"><b>Local infection — skin/subcutaneous</b><span>≥2 signs of inflammation; erythema ≤ 2 cm around ulcer; no deeper/systemic involvement.</span></span></label></div>
+          <div class="pill sev-3"><input type="radio" name="idsa" id="id3" value="Moderate"><label for="id3"><span class="lv">3 · Moderate</span><span class="lt"><b>Deeper or extensive local infection</b><span>Erythema &gt; 2 cm, or abscess / osteomyelitis / septic arthritis / fasciitis; patient systemically well.</span></span></label></div>
+          <div class="pill sev-4"><input type="radio" name="idsa" id="id4" value="Severe"><label for="id4"><span class="lv">4 · Severe</span><span class="lt"><b>Systemic toxicity (SIRS)</b><span>Fever, tachycardia, hypotension, confusion, leucocytosis, acidosis. → urgent referral.</span></span></label></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Neurovascular exam -->
+    <div class="panel">
+      <div class="panel-h"><span class="n">4</span><h3>Neurovascular Exam</h3><span class="h-sub">ADA Standards of Care 2025</span></div>
+      <div class="panel-b">
+        <div class="section-label">10-g monofilament — tap each site tested</div>
+        <div class="callout warn" style="margin-top:8px"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4M12 17v.01M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg><span>Test the <b>hallux, 1st, 3rd &amp; 5th metatarsal heads</b> on each foot. Loss at any site = loss of protective sensation (LOPS). Tap a circle to cycle: <b>grey → felt → not felt</b>.</span></div>
+        <div class="foot-assess" style="margin-top:14px">
+          <div class="feet" id="footMap"></div>
+          <div class="mono-legend">
+            <div class="ml"><span class="sw" style="background:#fff;border:2px solid var(--muted-2)"></span>Not tested</div>
+            <div class="ml"><span class="sw" style="background:var(--ok)"></span>Sensation felt</div>
+            <div class="ml"><span class="sw" style="background:var(--high)"></span>Not felt (LOPS)</div>
+            <div class="hint2" id="monoSummary">No sites recorded yet.</div>
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:18px">Vascular &amp; other</div>
+        <div class="grid g3 keep" style="margin-top:8px">
+          <div class="field"><label>Dorsalis pedis pulse</label><select><option value="">Select…</option><option>Palpable</option><option>Diminished</option><option>Absent</option></select></div>
+          <div class="field"><label>Posterior tibial pulse</label><select><option value="">Select…</option><option>Palpable</option><option>Diminished</option><option>Absent</option></select></div>
+          <div class="field"><label>ABI (if available)</label><input type="number" step="0.01" placeholder="e.g. 0.9"></div>
+          <div class="field"><label>Skin / temperature</label><select><option value="">Select…</option><option>Warm, well-perfused</option><option>Cool</option><option>Dependent rubor</option></select></div>
+          <div class="field"><label>Foot deformity</label><select><option value="">Select…</option><option>None</option><option>Bunion / hammertoe</option><option>Charcot</option><option>Prominent MT heads</option><option>Prior amputation</option></select></div>
+          <div class="field"><label>Callus around ulcer</label><select><option value="">Select…</option><option>None</option><option>Present</option><option>Heavy</option></select></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Offloading & plan -->
+    <div class="panel">
+      <div class="panel-h"><span class="n">5</span><h3>Offloading &amp; Plan</h3></div>
+      <div class="panel-b">
+        <div class="grid g2">
+          <div class="field"><label>Offloading in place</label><select><option value="">Select…</option><option>None</option><option>Total contact cast (TCC)</option><option>Removable knee-high walker</option><option>Ankle-high device</option><option>Felted foam + footwear</option><option>Therapeutic footwear</option></select></div>
+          <div class="field"><label>Debridement this visit</label><select><option value="">Select…</option><option>Not required</option><option>Sharp</option><option>Autolytic</option><option>Enzymatic</option></select></div>
+          <div class="field"><label>Primary dressing</label><input type="text" placeholder="e.g. Alginate + foam"></div>
+          <div class="field"><label>Physician / specialist notified?</label><select><option>Not required</option><option>Yes — routine update</option><option>Yes — urgent (infection / ischaemia)</option></select></div>
+        </div>
+        <div class="field span2" style="margin-top:14px"><label>Clinical notes &amp; plan</label><textarea placeholder="Healing progress, offloading adherence, glycaemic control, education given, escalation…"></textarea></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">6</span><h3>Wound Photography</h3><span class="h-sub">Attach clinical images</span></div>
+      <div class="panel-b">
+        <div class="img-drop" data-imgdrop="dfu">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L8 6H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-4l-1.5-2z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          <div class="il">Add wound photo(s)</div>
+          <div class="is">Tap to capture or upload · JPG/PNG · stored with this visit</div>
+        </div>
+        <input type="file" accept="image/*" capture="environment" multiple hidden data-imgin="dfu">
+        <div class="img-grid" data-imggrid="dfu"></div>
+      </div>
+    </div>
+
+    <div class="print-score" data-for="dfu"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- ==================== TOOL 3: PRESSURE INJURY ==================== -->
+  <!-- ================================================================= -->
+  <section class="tool" id="tool-pi" data-title="Pressure Injury Assessment">
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">1</span><h3>Injury Identification</h3></div>
+      <div class="panel-b">
+        <div class="grid g3 keep">
+          <div class="field"><label>Anatomical location</label><select><option value="">Select…</option><option>Sacrum</option><option>Coccyx</option><option>Ischial tuberosity</option><option>Heel (L)</option><option>Heel (R)</option><option>Trochanter</option><option>Elbow</option><option>Occiput</option><option>Other</option></select></div>
+          <div class="field"><label>Present on admission?</label><select><option value="">Select…</option><option>Yes</option><option>No (acquired in care)</option></select></div>
+          <div class="field"><label>Date first observed</label><input type="date"></div>
+          <div class="field"><label>Origin</label><select><option value="">Select…</option><option>Pressure</option><option>Medical device–related (MDRPI)</option><option>Mucosal membrane</option></select></div>
+          <div class="field span2"><label>If device-related, which device</label><input type="text" placeholder="e.g. Oxygen tubing, cast, catheter"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Staging -->
+    <div class="panel">
+      <div class="panel-h"><span class="n">2</span><h3>Staging</h3><span class="h-sub">NPIAP / EPUAP 2019</span></div>
+      <div class="panel-b">
+        <div class="callout warn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4M12 17v.01M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg><span>Stage by the <b>deepest visible tissue</b>. Do not reverse-stage (a healing Stage 4 stays Stage 4). In darker skin tones, look for temperature, colour and consistency change — Stage 1 erythema may not be visible.</span></div>
+        <div class="pills" id="piStage" style="margin-top:14px">
+          <div class="pill"><input type="radio" name="stage" id="st1" value="Stage 1"><label for="st1"><span class="lv">1</span><span class="lt"><b>Stage 1 — Non-blanchable erythema</b><span>Intact skin with localised non-blanchable redness. Skin not broken.</span></span></label></div>
+          <div class="pill"><input type="radio" name="stage" id="st2" value="Stage 2"><label for="st2"><span class="lv">2</span><span class="lt"><b>Stage 2 — Partial-thickness</b><span>Exposed dermis; shallow open ulcer or intact/ruptured serum blister. No slough.</span></span></label></div>
+          <div class="pill"><input type="radio" name="stage" id="st3" value="Stage 3"><label for="st3"><span class="lv">3</span><span class="lt"><b>Stage 3 — Full-thickness</b><span>Subcutaneous fat visible; slough/eschar may be present but bone/muscle not exposed. Undermining possible.</span></span></label></div>
+          <div class="pill"><input type="radio" name="stage" id="st4" value="Stage 4"><label for="st4"><span class="lv">4</span><span class="lt"><b>Stage 4 — Full-thickness tissue loss</b><span>Exposed/palpable fascia, muscle, tendon, ligament, cartilage or bone.</span></span></label></div>
+          <div class="pill"><input type="radio" name="stage" id="stU" value="Unstageable"><label for="stU"><span class="lv">U</span><span class="lt"><b>Unstageable</b><span>Full-thickness loss obscured by slough or eschar. Depth unknown until base is exposed.</span></span></label></div>
+          <div class="pill"><input type="radio" name="stage" id="stD" value="DTPI"><label for="stD"><span class="lv">DTI</span><span class="lt"><b>Deep tissue pressure injury</b><span>Persistent non-blanchable deep red/maroon/purple, or blood-filled blister. Intact or non-intact skin.</span></span></label></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wound bed & measurements -->
+    <div class="panel">
+      <div class="panel-h"><span class="n">3</span><h3>Wound Bed &amp; Measurements</h3><span class="h-sub">MEASURE framework</span></div>
+      <div class="panel-b">
+        <div class="section-label">Dimensions</div>
+        <div class="grid g4 keep" style="margin-top:8px">
+          <div class="field"><label>Length</label><div class="unit-row"><input type="number" step="0.1" min="0" placeholder="0.0"><span class="u">cm</span></div></div>
+          <div class="field"><label>Width</label><div class="unit-row"><input type="number" step="0.1" min="0" placeholder="0.0"><span class="u">cm</span></div></div>
+          <div class="field"><label>Depth</label><div class="unit-row"><input type="number" step="0.1" min="0" placeholder="0.0"><span class="u">cm</span></div></div>
+          <div class="field"><label>Undermining / tunnel</label><input type="text" placeholder="e.g. 2cm @ 6 o'clock"></div>
+        </div>
+        <div class="section-label" style="margin-top:16px">Tissue in wound bed <span class="mono" style="font-size:10px;color:var(--muted-2);text-transform:none;letter-spacing:0">approx %</span></div>
+        <div class="grid g4 keep" style="margin-top:8px">
+          <div class="field"><label>Granulation %</label><div class="unit-row"><input type="number" min="0" max="100" placeholder="0"><span class="u">%</span></div></div>
+          <div class="field"><label>Epithelial %</label><div class="unit-row"><input type="number" min="0" max="100" placeholder="0"><span class="u">%</span></div></div>
+          <div class="field"><label>Slough %</label><div class="unit-row"><input type="number" min="0" max="100" placeholder="0"><span class="u">%</span></div></div>
+          <div class="field"><label>Necrotic/eschar %</label><div class="unit-row"><input type="number" min="0" max="100" placeholder="0"><span class="u">%</span></div></div>
+        </div>
+        <div class="grid g3 keep" style="margin-top:16px">
+          <div class="field"><label>Exudate amount</label><select><option value="">Select…</option><option>None</option><option>Scant</option><option>Small / low</option><option>Moderate</option><option>Large / high</option></select></div>
+          <div class="field"><label>Exudate type</label><select><option value="">Select…</option><option>Serous</option><option>Serosanguineous</option><option>Sanguineous</option><option>Purulent</option></select></div>
+          <div class="field"><label>Odour</label><select><option value="">Select…</option><option>None</option><option>Faint after cleansing</option><option>Strong</option></select></div>
+          <div class="field"><label>Periwound skin</label><select><option value="">Select…</option><option>Intact / healthy</option><option>Erythema</option><option>Macerated</option><option>Indurated</option></select></div>
+          <div class="field"><label>Signs of infection</label><select><option value="">Select…</option><option>None</option><option>Local (erythema/warmth/pain)</option><option>Spreading / systemic</option></select></div>
+          <div class="field"><label>Pain (0–10)</label><div class="unit-row"><input type="number" min="0" max="10" placeholder="0"><span class="u">/10</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Braden -->
+    <div class="panel">
+      <div class="panel-h"><span class="n">4</span><h3>Braden Scale — Risk of Further Injury</h3><span class="h-sub">6 subscales · total 6–23</span></div>
+      <div class="panel-b">
+        <div class="callout info"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg><span>Score each subscale — <b>lower total = higher risk</b>. Also act on any single low subscale (e.g. constant moisture) regardless of the total.</span></div>
+
+        <div style="margin-top:14px" id="bradenWrap">
+          <div class="scored">
+            <div class="scored-h"><span class="t">Sensory perception<small>Ability to feel &amp; respond to pressure discomfort</small></span><span class="pts" data-pts>–</span></div>
+            <div class="opts br" data-braden>
+              <div class="opt"><input type="radio" name="br_sens" value="1" id="br_sens_1"><label for="br_sens_1"><span class="sc">▪ 1</span>Completely limited</label></div>
+              <div class="opt"><input type="radio" name="br_sens" value="2" id="br_sens_2"><label for="br_sens_2"><span class="sc">▪ 2</span>Very limited</label></div>
+              <div class="opt"><input type="radio" name="br_sens" value="3" id="br_sens_3"><label for="br_sens_3"><span class="sc">▪ 3</span>Slightly limited</label></div>
+              <div class="opt"><input type="radio" name="br_sens" value="4" id="br_sens_4"><label for="br_sens_4"><span class="sc">▪ 4</span>No impairment</label></div>
+            </div>
+          </div>
+          <div class="scored">
+            <div class="scored-h"><span class="t">Moisture<small>Degree of skin exposure to moisture</small></span><span class="pts" data-pts>–</span></div>
+            <div class="opts br" data-braden>
+              <div class="opt"><input type="radio" name="br_moist" value="1" id="br_moist_1"><label for="br_moist_1"><span class="sc">▪ 1</span>Constantly moist</label></div>
+              <div class="opt"><input type="radio" name="br_moist" value="2" id="br_moist_2"><label for="br_moist_2"><span class="sc">▪ 2</span>Very moist</label></div>
+              <div class="opt"><input type="radio" name="br_moist" value="3" id="br_moist_3"><label for="br_moist_3"><span class="sc">▪ 3</span>Occasionally moist</label></div>
+              <div class="opt"><input type="radio" name="br_moist" value="4" id="br_moist_4"><label for="br_moist_4"><span class="sc">▪ 4</span>Rarely moist</label></div>
+            </div>
+          </div>
+          <div class="scored">
+            <div class="scored-h"><span class="t">Activity<small>Degree of physical activity</small></span><span class="pts" data-pts>–</span></div>
+            <div class="opts br" data-braden>
+              <div class="opt"><input type="radio" name="br_act" value="1" id="br_act_1"><label for="br_act_1"><span class="sc">▪ 1</span>Bedfast</label></div>
+              <div class="opt"><input type="radio" name="br_act" value="2" id="br_act_2"><label for="br_act_2"><span class="sc">▪ 2</span>Chairfast</label></div>
+              <div class="opt"><input type="radio" name="br_act" value="3" id="br_act_3"><label for="br_act_3"><span class="sc">▪ 3</span>Walks occasionally</label></div>
+              <div class="opt"><input type="radio" name="br_act" value="4" id="br_act_4"><label for="br_act_4"><span class="sc">▪ 4</span>Walks frequently</label></div>
+            </div>
+          </div>
+          <div class="scored">
+            <div class="scored-h"><span class="t">Mobility<small>Ability to change body position</small></span><span class="pts" data-pts>–</span></div>
+            <div class="opts br" data-braden>
+              <div class="opt"><input type="radio" name="br_mob" value="1" id="br_mob_1"><label for="br_mob_1"><span class="sc">▪ 1</span>Completely immobile</label></div>
+              <div class="opt"><input type="radio" name="br_mob" value="2" id="br_mob_2"><label for="br_mob_2"><span class="sc">▪ 2</span>Very limited</label></div>
+              <div class="opt"><input type="radio" name="br_mob" value="3" id="br_mob_3"><label for="br_mob_3"><span class="sc">▪ 3</span>Slightly limited</label></div>
+              <div class="opt"><input type="radio" name="br_mob" value="4" id="br_mob_4"><label for="br_mob_4"><span class="sc">▪ 4</span>No limitation</label></div>
+            </div>
+          </div>
+          <div class="scored">
+            <div class="scored-h"><span class="t">Nutrition<small>Usual food intake pattern</small></span><span class="pts" data-pts>–</span></div>
+            <div class="opts br" data-braden>
+              <div class="opt"><input type="radio" name="br_nut" value="1" id="br_nut_1"><label for="br_nut_1"><span class="sc">▪ 1</span>Very poor</label></div>
+              <div class="opt"><input type="radio" name="br_nut" value="2" id="br_nut_2"><label for="br_nut_2"><span class="sc">▪ 2</span>Probably inadequate</label></div>
+              <div class="opt"><input type="radio" name="br_nut" value="3" id="br_nut_3"><label for="br_nut_3"><span class="sc">▪ 3</span>Adequate</label></div>
+              <div class="opt"><input type="radio" name="br_nut" value="4" id="br_nut_4"><label for="br_nut_4"><span class="sc">▪ 4</span>Excellent</label></div>
+            </div>
+          </div>
+          <div class="scored">
+            <div class="scored-h"><span class="t">Friction &amp; shear<small>Scored 1–3</small></span><span class="pts" data-pts>–</span></div>
+            <div class="opts br" data-braden>
+              <div class="opt"><input type="radio" name="br_fric" value="1" id="br_fric_1"><label for="br_fric_1"><span class="sc">▪ 1</span>Problem</label></div>
+              <div class="opt"><input type="radio" name="br_fric" value="2" id="br_fric_2"><label for="br_fric_2"><span class="sc">▪ 2</span>Potential problem</label></div>
+              <div class="opt"><input type="radio" name="br_fric" value="3" id="br_fric_3"><label for="br_fric_3"><span class="sc">▪ 3</span>No apparent problem</label></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">5</span><h3>Prevention &amp; Plan</h3></div>
+      <div class="panel-b">
+        <div class="grid g2">
+          <div class="field"><label>Support surface</label><select><option value="">Select…</option><option>Standard mattress</option><option>Foam pressure-redistributing</option><option>Alternating-pressure / air</option><option>Cushion (seating)</option></select></div>
+          <div class="field"><label>Repositioning schedule</label><input type="text" placeholder="e.g. every 2 h"></div>
+          <div class="field"><label>Primary dressing</label><input type="text" placeholder="e.g. Foam / hydrocolloid"></div>
+          <div class="field"><label>Nutrition referral?</label><select><option>Not required</option><option>Recommended</option><option>Referred</option></select></div>
+        </div>
+        <div class="field span2" style="margin-top:14px"><label>Clinical notes &amp; plan</label><textarea placeholder="Healing trend, carer education on repositioning &amp; skin checks, escalation…"></textarea></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">6</span><h3>Wound Photography</h3><span class="h-sub">Attach clinical images</span></div>
+      <div class="panel-b">
+        <div class="img-drop" data-imgdrop="pi">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L8 6H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-4l-1.5-2z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          <div class="il">Add wound photo(s)</div>
+          <div class="is">Tap to capture or upload · JPG/PNG · stored with this visit</div>
+        </div>
+        <input type="file" accept="image/*" capture="environment" multiple hidden data-imgin="pi">
+        <div class="img-grid" data-imggrid="pi"></div>
+      </div>
+    </div>
+
+    <div class="print-score" data-for="pi"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- ==================== TAB 4: PATIENT LOG ========================== -->
+  <!-- ================================================================= -->
+  <section class="tool" id="tool-log" data-title="Patient Log">
+
+    <!-- printable header for a patient record -->
+    <div class="log-print-head">
+      <div class="pm"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.35-9.5-9C1 9 2.5 5 6 5c2 0 3.2 1.2 4 2.5C10.8 6.2 12 5 14 5c1.2 0 2.2.4 3 1.1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 12.5h2l1.5-3 2 6 1.5-3h1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div><h2 class="jakarta">CuraNova — Patient Wound Record</h2><p>Home Nursing · Advanced Wound Care</p></div>
+    </div>
+
+    <div class="panel no-print-log">
+      <div class="panel-h"><span class="n">⌕</span><h3>Patient Log</h3><span class="h-sub">Assessments save here automatically by MRN</span></div>
+      <div class="panel-b">
+        <div class="callout info"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg><span>Each patient is keyed by <b>MRN</b>. Saving an assessment whose MRN already exists <b>appends the visit to that patient's record</b> — it never creates a duplicate. Records are stored securely in this browser only.</span></div>
+        <div class="search-wrap" style="margin-top:14px">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" id="logSearch" placeholder="Search by MRN, patient name, or date of birth…">
+        </div>
+        <div class="log-toolbar">
+          <span class="hint">Tap a patient to open their full record.</span>
+          <span class="log-count" id="logCount"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="log-list no-print-log" id="logList"></div>
+    <div class="pt-detail" id="logDetail" style="display:none"></div>
+
+  </section>
+
+  <div class="legend-src no-print">
+    <b>Evidence base.</b> Diabetic foot — IWGDF 2023 Classification Guideline (SINBAD, WIfI); IWGDF/IDSA 2023 infection classification; ADA <i>Standards of Care in Diabetes 2025</i> (comprehensive foot exam, 10-g monofilament). Surgical — CDC/NHSN Surgical Site Infection surveillance definitions; surgical wound classification (Clean → Dirty). Pressure — NPIAP/EPUAP/PPPIA 2019 International Guideline staging; Braden Scale for Predicting Pressure Sore Risk (Bergstrom &amp; Braden). Wound-bed documentation follows the MEASURE / TIME frameworks.<br><br>
+    <b>Intended use:</b> a structured aid for trained clinicians. Scores support triage and communication with the referring physician; they do not replace clinical judgement or physician diagnosis.
+  </div>
+</div>
+
+<!-- ============ SCORE DOCK ============ -->
+<div class="dock no-print">
+  <div class="dock-in">
+    <div class="score-badge">
+      <div class="score-num" id="dockNum">–</div>
+      <div class="score-meta">
+        <div class="sl" id="dockLabel">SINBAD score</div>
+        <div class="sv" id="dockValue">Complete the assessment<span class="riskchip" id="dockChip" style="display:none"></span></div>
+        <div class="interp" id="dockInterp"></div>
+      </div>
+    </div>
+    <div class="dock-actions">
+      <button class="btn btn-ghost" onclick="resetActive()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8"/><path d="M3 3v5h5"/></svg><span class="lbl">Reset</span></button>
+      <button class="btn btn-ghost" id="btnSave" onclick="saveToLog()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg><span class="lbl">Save to Log</span></button>
+      <button class="btn btn-primary" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-4a2 2 0 012-2h16a2 2 0 012 2v4a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg><span class="lbl">Print / Save PDF</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Datalists for selectable / remembered fields ===== -->
+<datalist id="dl-nurses"></datalist>
+<datalist id="dl-physicians"></datalist>
+<datalist id="dl-specialties"></datalist>
+<datalist id="dl-procedures"></datalist>
+<datalist id="dl-sites"></datalist>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- Tabs ---------------- */
+const tabs=document.querySelectorAll('.tab');
+const tools={surg:document.getElementById('tool-surg'),dfu:document.getElementById('tool-dfu'),
+             pi:document.getElementById('tool-pi'),log:document.getElementById('tool-log')};
+const assessTools=['surg','dfu','pi'];
+let active='surg';
+const patientPanel=document.getElementById('patientPanel');
+const dock=document.querySelector('.dock');
+function switchTool(k){
+  active=k;
+  tabs.forEach(t=>t.classList.toggle('active',t.dataset.tool===k));
+  Object.entries(tools).forEach(([id,el])=>el.classList.toggle('active',id===k));
+  if(k==='log'){
+    dock.style.display='none';
+    document.getElementById('printTitle').textContent='Patient Log';
+    renderLog();
+  }else{
+    dock.style.display='';
+    // move shared patient panel to top of active tool
+    tools[k].prepend(patientPanel);
+    document.getElementById('printTitle').textContent=tools[k].dataset.title;
+    recalc();
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+tabs.forEach(t=>t.addEventListener('click',()=>switchTool(t.dataset.tool)));
+tools.surg.prepend(patientPanel);
+
+/* ---------------- Foot map (monofilament) ---------------- */
+const sitesDef=[{id:'hallux',x:34,y:20,l:'H'},{id:'mth1',x:24,y:44,l:'1'},{id:'mth3',x:40,y:48,l:'3'},{id:'mth5',x:56,y:52,l:'5'}];
+function buildFoot(side){
+  const mirror=side==='R';
+  let s=`<div class="foot-svg"><div class="fl">${side} foot</div><svg width="88" height="150" viewBox="0 0 80 150">`;
+  s+=`<path d="M40 6 C20 6 14 26 16 50 C17 66 12 74 14 92 C16 112 22 132 40 132 C58 132 64 112 66 92 C68 74 63 66 64 50 C66 26 60 6 40 6 Z" fill="#F6F8FA" stroke="#D6DEE5" stroke-width="2"/>`;
+  sitesDef.forEach(p=>{
+    const x=mirror?80-p.x:p.x;
+    s+=`<g class="site" data-side="${side}" data-site="${p.id}" data-state="0" transform="translate(${x},${p.y})"><circle r="9"/><text x="0" y="3" text-anchor="middle">${p.l}</text></g>`;
+  });
+  s+=`</svg></div>`;
+  return s;
+}
+const footMap=document.getElementById('footMap');
+if(footMap){footMap.innerHTML=buildFoot('L')+buildFoot('R');
+  footMap.querySelectorAll('.site').forEach(g=>{
+    g.addEventListener('click',()=>{
+      let st=(+g.dataset.state+1)%3; g.dataset.state=st;
+      g.classList.toggle('felt',st===1); g.classList.toggle('notfelt',st===2);
+      updateMono();
+    });
+  });
+}
+function updateMono(){
+  const sites=footMap.querySelectorAll('.site');
+  let tested=0,lost=0;
+  sites.forEach(s=>{if(+s.dataset.state>0){tested++; if(+s.dataset.state===2)lost++;}});
+  const el=document.getElementById('monoSummary');
+  if(tested===0){el.textContent='No sites recorded yet.';}
+  else if(lost>0){el.innerHTML=`<b style="color:var(--high)">Loss of protective sensation (LOPS)</b> — ${lost} of ${tested} tested site(s) not felt. This corresponds to SINBAD neuropathy = 1 point.`;}
+  else{el.innerHTML=`<b style="color:var(--ok)">Protective sensation intact</b> across ${tested} tested site(s).`;}
+}
+
+/* ---------------- Scoring ---------------- */
+const dockNum=document.getElementById('dockNum'),dockLabel=document.getElementById('dockLabel'),
+      dockValue=document.getElementById('dockValue'),dockChip=document.getElementById('dockChip'),
+      dockInterp=document.getElementById('dockInterp');
+
+function setChip(text,color){dockChip.textContent=text;dockChip.style.background=color;dockChip.style.display=text?'inline-block':'none';}
+
+function recalc(){
+  if(active==='surg')scoreSurg();
+  else if(active==='dfu')scoreDFU();
+  else if(active==='pi')scorePI();
+  else return;
+  syncPrintScore();
+}
+
+/* SINBAD + IDSA */
+function scoreDFU(){
+  const groups=['site','isch','neuro','bact','area','depth'];
+  let total=0,done=0;
+  document.querySelectorAll('#tool-dfu [data-sinbad]').forEach(g=>{
+    const sel=g.querySelector('input:checked');
+    const badge=g.closest('.scored').querySelector('[data-pts]');
+    if(sel){done++;total+=+sel.value;badge.textContent=sel.value+'/1';badge.style.color=sel.value==='1'?'var(--mod)':'var(--ok)';}
+    else{badge.textContent='0/1';badge.style.color='var(--muted-2)';}
+  });
+  dockLabel.textContent='SINBAD score';
+  if(done===0){dockNum.innerHTML='–';dockValue.innerHTML='Complete the assessment';setChip('');dockInterp.textContent='';return;}
+  dockNum.innerHTML=total+'<small>/6</small>';
+  let risk,color,note;
+  if(total<=1){risk='Low severity';color='var(--low)';note='High likelihood of healing. Continue standard wound care & offloading.';}
+  else if(total<=3){risk='Moderate severity';color='var(--mild)';note='Reduced healing probability — ensure offloading, infection control & vascular review.';}
+  else if(total<=4){risk='High severity';color='var(--mod)';note='Low healing probability. Escalate to multidisciplinary foot team.';}
+  else{risk='Very high severity';color='var(--severe)';note='Poor prognosis / amputation risk — urgent specialist referral.';}
+  const idsa=document.querySelector('#tool-dfu [name=idsa]:checked');
+  const idsaTxt=idsa?` · Infection: ${idsa.value}`:'';
+  dockValue.innerHTML=`${done<6?`<span style="color:var(--muted-2)">${done}/6 recorded — </span>`:''}${risk}<span class="riskchip" id="dockChip"></span>`;
+  setChipInline(risk.split(' ')[0]==='Very'?'Very high':risk.split(' ')[0],color);
+  dockInterp.textContent=note+idsaTxt;
+}
+
+/* Braden + Stage */
+function scorePI(){
+  const names=['br_sens','br_moist','br_act','br_mob','br_nut','br_fric'];
+  let total=0,done=0;
+  document.querySelectorAll('#bradenWrap .opts').forEach(g=>{
+    const sel=g.querySelector('input:checked');
+    const badge=g.closest('.scored').querySelector('[data-pts]');
+    if(sel){done++;total+=+sel.value;badge.textContent=sel.value;
+      badge.style.color=+sel.value<=2?'var(--mod)':'var(--ok)';}
+    else{badge.textContent='–';badge.style.color='var(--muted-2)';}
+  });
+  const stage=document.querySelector('#piStage input:checked');
+  dockLabel.textContent='Braden score';
+  if(done===0){dockNum.innerHTML='–';dockValue.innerHTML=stage?`Stage: ${stage.value}`:'Complete the assessment';setChip('');dockInterp.textContent=stage?'Score the Braden subscales for risk of further injury.':'';return;}
+  dockNum.innerHTML=total+'<small>/23</small>';
+  let risk,color,note;
+  if(total>=19){risk='Minimal risk';color='var(--low)';note='Standard skin care & routine repositioning.';}
+  else if(total>=15){risk='Mild risk';color='var(--mild)';note='Begin prevention protocol: repositioning, moisture & skin care.';}
+  else if(total>=13){risk='Moderate risk';color='var(--mod)';note='Add pressure-redistributing surface; reposition ≤ 2-hourly.';}
+  else if(total>=10){risk='High risk';color='var(--high)';note='Intensify prevention; consider specialist support surface & nutrition review.';}
+  else{risk='Very high risk';color='var(--severe)';note='Aggressive multi-component prevention & frequent review.';}
+  dockValue.innerHTML=`${done<6?`<span style="color:var(--muted-2)">${done}/6 — </span>`:''}${risk}${stage?` · <span style="color:var(--navy)">${stage.value}</span>`:''}<span class="riskchip" id="dockChip"></span>`;
+  setChipInline(risk.replace(' risk',''),color);
+  dockInterp.textContent=note;
+}
+
+/* Surgical class + SSI */
+function scoreSurg(){
+  const cls=document.querySelector('#surgClass input:checked');
+  dockLabel.textContent='Surgical wound class';
+  const signs=[...document.querySelectorAll('#ssiSigns input:checked')].length;
+  const depthSel=document.querySelectorAll('#ssiDepth input:checked');
+  let depthType='';
+  document.querySelectorAll('#ssiDepth input:checked').forEach(c=>{
+    const w=c.dataset.w;
+    if(w==='organ')depthType='Organ/space SSI';
+    else if(w==='deep'&&depthType!=='Organ/space SSI')depthType='Deep incisional SSI';
+    else if(w==='superficial'&&!depthType)depthType='Superficial incisional SSI';
+    else if(w==='dehisc'&&!depthType)depthType='Dehiscence';
+  });
+  const ssiSuspected=signs>=1;
+  if(!cls){dockNum.innerHTML='–';}
+  else{dockNum.innerHTML=`<span class="mono" style="font-size:24px">${cls.value}</span>`;}
+  if(!cls&&signs===0){dockValue.innerHTML='Complete the assessment';setChip('');dockInterp.textContent='';return;}
+  let color,label,note;
+  if(ssiSuspected){
+    color='var(--high)';label='Suspected SSI';
+    note=(depthType?depthType+' pattern. ':'')+'Signs of infection present — notify the referring surgeon.';
+  }else if(cls){
+    color='var(--low)';label='No SSI signs';
+    const risk=cls.closest('.pill').querySelector('input').dataset.risk;
+    note=`Class ${cls.value} — baseline ${risk}. Continue monitoring the incision.`;
+  }
+  const clsTxt=cls?({I:'Clean',II:'Clean-contaminated',III:'Contaminated',IV:'Dirty-infected'})[cls.value]:'';
+  dockValue.innerHTML=`${cls?clsTxt:''}${cls&&ssiSuspected?' · ':''}${ssiSuspected?'<b style="color:var(--high)">flagged</b>':''}<span class="riskchip" id="dockChip"></span>`;
+  setChipInline(label,color);
+  dockInterp.textContent=note;
+}
+
+/* chip helper (re-query because innerHTML rewrites it) */
+function setChipInline(text,color){
+  const chip=dockValue.querySelector('#dockChip');
+  if(chip){chip.textContent=text;chip.style.background=color;chip.style.display='inline-block';}
+}
+function setChip(t){const chip=dockValue.querySelector('#dockChip')||dockChip;if(chip){chip.style.display='none';}}
+
+/* mirror score into the printable block */
+function syncPrintScore(){
+  document.querySelectorAll('.print-score').forEach(b=>b.innerHTML='');
+  const target=document.querySelector(`.print-score[data-for="${active}"]`);
+  if(!target)return;
+  const num=dockNum.textContent, label=dockLabel.textContent, val=dockValue.textContent.trim(), interp=dockInterp.textContent;
+  target.innerHTML=`<div style="font-family:'IBM Plex Mono';font-weight:600;font-size:26px;color:var(--navy)">${num}</div>
+    <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#666;font-weight:600">${label}</div>
+    <div style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:14px">${val}</div>
+    <div style="font-size:11px;color:#555;margin-top:2px">${interp}</div></div>`;
+}
+
+/* ---------------- Reset ---------------- */
+function resetActive(){
+  if(!assessTools.includes(active))return;
+  const el=tools[active];
+  el.querySelectorAll('input,select,textarea').forEach(f=>{
+    if(f.type==='radio'||f.type==='checkbox')f.checked=false;else f.value='';
+  });
+  if(active==='dfu'&&footMap){footMap.querySelectorAll('.site').forEach(s=>{s.dataset.state=0;s.classList.remove('felt','notfelt');});updateMono();}
+  el.querySelectorAll('[data-pts]').forEach(b=>{b.textContent=b.textContent.includes('/')?'0/1':'–';b.style.color='var(--muted-2)';});
+  toolImages[active]=[];renderImgGrid(active);
+  recalc();
+}
+
+/* =================================================================
+   PERSISTENCE · SELECTABLE LISTS · IMAGES · PATIENT LOG
+   All data lives in this browser (localStorage). No server.
+   ================================================================= */
+
+/* ---- small utils ---- */
+function esc(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function escAttr(s){return String(s==null?'':s).replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function fmtDate(iso){try{const d=new Date(iso);return isNaN(d)?iso:d.toLocaleDateString();}catch(e){return iso;}}
+function labelText(el){if(!el)return'';const c=el.cloneNode(true);c.querySelectorAll('.tag,.mono,small').forEach(n=>n.remove());return c.textContent.replace(/\s+/g,' ').trim();}
+function loadJSON(k,def){try{const v=JSON.parse(localStorage.getItem(k));return v==null?def:v;}catch(e){return def;}}
+function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){toast('Browser storage is full — remove old photos or records',true);return false;}}
+
+/* ---- toast ---- */
+const toastEl=document.getElementById('toast');let toastT;
+function toast(msg,err){
+  toastEl.className='toast show'+(err?' err':'');
+  toastEl.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${err?'<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16v.01"/>':'<path d="M20 6L9 17l-5-5"/>'}</svg><span>${esc(msg)}</span>`;
+  clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove('show'),2600);
+}
+
+/* ---- selectable lists (nurse / physician / specialty / procedure / site) ---- */
+const LIST_DEFAULTS={
+  nurses:[], physicians:[],
+  specialties:['Vascular surgery','General surgery','Plastic & reconstructive surgery','Orthopedic surgery','Colorectal surgery','Cardiothoracic surgery','Endocrinology','Internal medicine','Infectious disease','Dermatology','Podiatry','Cardiology','Nephrology','Geriatrics','Family medicine','Neurology','Neurosurgery','Urology','OB/GYN','Rheumatology','Wound care / tissue viability'],
+  procedures:['Right hemicolectomy','Left hemicolectomy','Sigmoid colectomy','Exploratory laparotomy','Appendectomy','Cholecystectomy','Inguinal hernia repair','Incisional hernia repair','Caesarean section','Total abdominal hysterectomy','Mastectomy','Coronary artery bypass graft (CABG)','Femoral–popliteal bypass','Below-knee amputation (BKA)','Above-knee amputation (AKA)','Transmetatarsal amputation','Toe amputation','Surgical debridement','Incision & drainage','Split-thickness skin graft','Total knee arthroplasty','Total hip arthroplasty','Lumbar spinal fusion','Fasciotomy'],
+  sites:['Midline abdominal','Upper midline','Lower midline','Pfannenstiel','Right subcostal','McBurney (RLQ)','Median sternotomy','Left thoracotomy','Right inguinal','Left inguinal','Groin','Plantar forefoot','Plantar 1st MTH','Plantar 5th MTH','Dorsal foot','Heel','Lateral malleolus','Sacrum','Coccyx','Ischial tuberosity','Greater trochanter','Lower leg (shin)','Calf','Medial thigh','Knee','Hip']
+};
+const DL_MAP={nurses:'dl-nurses',physicians:'dl-physicians',specialties:'dl-specialties',procedures:'dl-procedures',sites:'dl-sites'};
+function getLists(){const s=loadJSON('curanova_lists',{});const out={};for(const k in LIST_DEFAULTS){out[k]=[...new Set([...(LIST_DEFAULTS[k]||[]),...(s[k]||[])])];}return out;}
+function addToList(k,val){
+  val=(val||'').trim();if(!val)return false;
+  const stored=loadJSON('curanova_lists',{});
+  const existing=new Set([...(LIST_DEFAULTS[k]||[]),...(stored[k]||[])].map(x=>x.toLowerCase()));
+  if(existing.has(val.toLowerCase()))return false;
+  stored[k]=[...(stored[k]||[]),val];saveJSON('curanova_lists',stored);renderDatalists();return true;
+}
+function renderDatalists(){
+  const lists=getLists();
+  for(const k in DL_MAP){
+    const dl=document.getElementById(DL_MAP[k]);if(!dl)continue;
+    dl.innerHTML=[...lists[k]].sort((a,b)=>a.localeCompare(b)).map(v=>`<option value="${escAttr(v)}"></option>`).join('');
+  }
+}
+document.querySelectorAll('[data-addlist]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const inp=btn.parentElement.querySelector('input');
+    const v=(inp.value||'').trim();
+    if(!v){toast('Type a value first',true);inp.focus();return;}
+    toast(addToList(btn.dataset.addlist,v)?'Added to list':'Already in the list');
+  });
+});
+
+/* ---- wound images (per assessment tool) ---- */
+const toolImages={surg:[],dfu:[],pi:[]};
+function downscale(dataURL,max,q,cb){
+  const img=new Image();
+  img.onload=()=>{let w=img.width,h=img.height;
+    if(w>max||h>max){const s=max/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    c.getContext('2d').drawImage(img,0,0,w,h);
+    try{cb(c.toDataURL('image/jpeg',q));}catch(e){cb(dataURL);}};
+  img.onerror=()=>cb(dataURL);img.src=dataURL;
+}
+function handleFiles(t,files){
+  [...files].forEach(f=>{if(!f.type||!f.type.startsWith('image/'))return;
+    const r=new FileReader();r.onload=e=>downscale(e.target.result,1000,.82,url=>{toolImages[t].push(url);renderImgGrid(t);});r.readAsDataURL(f);});
+}
+function renderImgGrid(t){
+  const grid=document.querySelector(`[data-imggrid="${t}"]`);if(!grid)return;
+  grid.innerHTML=toolImages[t].map((u,i)=>`<div class="thumb"><img src="${u}" alt="wound photo ${i+1}"><button type="button" class="rm" data-imgrm="${t}" data-i="${i}" title="Remove photo">×</button><span class="cap">${i+1}</span></div>`).join('');
+}
+assessTools.forEach(t=>{
+  const drop=document.querySelector(`[data-imgdrop="${t}"]`),input=document.querySelector(`[data-imgin="${t}"]`);
+  if(!drop||!input)return;
+  drop.addEventListener('click',()=>input.click());
+  input.addEventListener('change',()=>{handleFiles(t,input.files);input.value='';});
+  ['dragover','dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{
+    e.preventDefault();drop.classList.toggle('drag',ev==='dragover');
+    if(ev==='drop')handleFiles(t,e.dataTransfer.files);
+  }));
+});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-imgrm]');
+  if(b){toolImages[b.dataset.imgrm].splice(+b.dataset.i,1);renderImgGrid(b.dataset.imgrm);}
+});
+
+/* ---- capture the active assessment into a structured record ---- */
+function sectionLabelText(el){const c=el.cloneNode(true);c.querySelectorAll('.mono').forEach(n=>n.remove());return c.textContent.replace(/\s+/g,' ').trim();}
+function nearestSectionLabel(node){let el=node.previousElementSibling;while(el){if(el.classList&&el.classList.contains('section-label'))return sectionLabelText(el);el=el.previousElementSibling;}return '';}
+function optText(labelEl){if(!labelEl)return'';const c=labelEl.cloneNode(true);c.querySelectorAll('.sc').forEach(n=>n.remove());return c.textContent.replace(/\s+/g,' ').trim();}
+function scoreValueText(){const c=dockValue.cloneNode(true);const chip=c.querySelector('#dockChip');if(chip)chip.remove();return c.textContent.replace(/\s+/g,' ').trim();}
+
+function captureTool(toolKey){
+  const el=tools[toolKey],sections=[];
+  el.querySelectorAll('.panel').forEach(panel=>{
+    const titleEl=panel.querySelector('.panel-h h3');
+    const title=titleEl?titleEl.textContent.trim():'';
+    if(/Wound Photography/i.test(title))return;
+    const items=[];
+    // plain fields
+    panel.querySelectorAll('.field').forEach(f=>{
+      const ctrl=f.querySelector('input,select,textarea');
+      if(!ctrl||ctrl.type==='radio'||ctrl.type==='checkbox'||ctrl.type==='file')return;
+      let val=(ctrl.value||'').trim();if(!val)return;
+      const u=f.querySelector('.u');if(u)val+=' '+u.textContent.trim();
+      items.push({label:labelText(f.querySelector('label')),value:val});
+    });
+    // pill radio groups (class / stage / infection severity)
+    panel.querySelectorAll('.pills').forEach(p=>{
+      const chk=p.querySelector('input:checked');if(!chk)return;
+      const b=chk.closest('.pill').querySelector('.lt b,b');
+      items.push({label:nearestSectionLabel(p)||title,value:b?b.textContent.trim():chk.value});
+    });
+    // checkbox criteria (SSI signs / depth)
+    panel.querySelectorAll('.crit').forEach(cr=>{
+      const checked=[...cr.querySelectorAll('input:checked')];if(!checked.length)return;
+      const vals=checked.map(c=>{const b=c.closest('.c').querySelector('.cl b');return b?b.textContent.trim():'';}).filter(Boolean);
+      items.push({label:nearestSectionLabel(cr)||title,value:vals.join(', ')});
+    });
+    // scored radio rows (SINBAD / Braden)
+    panel.querySelectorAll('.scored').forEach(sc=>{
+      const chk=sc.querySelector('input:checked');if(!chk)return;
+      const t=sc.querySelector('.scored-h .t');
+      items.push({label:labelText(t),value:optText(chk.nextElementSibling)+' (score '+chk.value+')'});
+    });
+    // monofilament summary
+    const mono=panel.querySelector('#monoSummary');
+    if(mono){const txt=mono.textContent.trim();if(txt&&txt!=='No sites recorded yet.')items.push({label:'10-g monofilament',value:txt});}
+    if(items.length)sections.push({title,items});
+  });
+  return {sections,score:{num:dockNum.textContent.trim(),label:dockLabel.textContent.trim(),value:scoreValueText(),interp:dockInterp.textContent.trim()}};
+}
+
+/* ---- read shared Patient & Visit panel ---- */
+function patientFieldValues(){
+  const map={'Patient name':'name','File / MRN':'mrn','Date of birth':'dob','Assessment date':'date','Visit #':'visitNo','Attending nurse':'nurse','Referring physician':'physician','Specialty':'specialty'};
+  const out={};
+  patientPanel.querySelectorAll('.field').forEach(f=>{
+    const lab=f.querySelector('label'),ctrl=f.querySelector('input,select,textarea');
+    if(!lab||!ctrl)return;const key=map[labelText(lab)];if(key)out[key]=(ctrl.value||'').trim();
+  });
+  return out;
+}
+function rememberFields(){tools[active].querySelectorAll('[data-remember]').forEach(inp=>{const v=(inp.value||'').trim();if(v)addToList(inp.dataset.remember,v);});}
+
+/* ---- SAVE to log (append by MRN) ---- */
+function getPatients(){return loadJSON('curanova_patients',{});}
+function saveToLog(){
+  if(!assessTools.includes(active))return;
+  const pv=patientFieldValues();
+  if(!pv.mrn){toast('Enter an MRN to save this assessment',true);
+    const mrnInput=[...patientPanel.querySelectorAll('.field')].find(f=>labelText(f.querySelector('label'))==='File / MRN');
+    if(mrnInput){mrnInput.querySelector('input').focus();mrnInput.scrollIntoView({behavior:'smooth',block:'center'});}
+    return;}
+  rememberFields();
+  const patients=getPatients();
+  const isNew=!patients[pv.mrn];
+  const p=patients[pv.mrn]||{mrn:pv.mrn,name:'',dob:'',visits:[]};
+  if(pv.name)p.name=pv.name;if(pv.dob)p.dob=pv.dob;if(!p.name)p.name='(unnamed)';
+  const cap=captureTool(active);
+  p.visits.push({
+    id:'v'+Date.now(),savedAt:new Date().toISOString(),
+    tool:active,toolTitle:tools[active].dataset.title,
+    date:pv.date||'',visitNo:pv.visitNo||'',nurse:pv.nurse||'',physician:pv.physician||'',specialty:pv.specialty||'',
+    score:cap.score,sections:cap.sections,images:toolImages[active].slice()
+  });
+  patients[pv.mrn]=p;
+  if(saveJSON('curanova_patients',patients)){
+    toolImages[active]=[];renderImgGrid(active);
+    toast(isNew?`New record created — ${p.name}`:`Visit ${p.visits.length} added — ${p.name}`);
+  }
+}
+
+/* ---- LOG page rendering ---- */
+let openMrn=null;
+function initials(name){return (name||'?').replace(/\(.*?\)/g,'').trim().split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('')||'?';}
+function lastVisit(p){return p.visits[p.visits.length-1];}
+function lastTime(p){const v=lastVisit(p);return v?new Date(v.savedAt).getTime():0;}
+function emptyState(t,s){return `<div class="log-empty"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V9l-6-6z"/><path d="M14 3v6h6"/></svg><div class="le-t">${esc(t)}</div><div style="font-size:12.5px;margin-top:3px">${esc(s)}</div></div>`;}
+function patientCard(p){
+  const n=p.visits.length,last=lastVisit(p);
+  return `<div class="pt-card" data-mrn="${escAttr(p.mrn)}"><div class="av">${esc(initials(p.name))}</div>
+    <div class="pc-main"><div class="pc-name">${esc(p.name||'(unnamed)')}</div>
+      <div class="pc-meta"><span class="mrn">MRN ${esc(p.mrn)}</span>${p.dob?`<span>DOB ${esc(p.dob)}</span>`:''}${last?`<span>Last: ${esc(last.date||fmtDate(last.savedAt))}</span>`:''}</div></div>
+    <div class="pc-visits"><b>${n}</b><span>visit${n!==1?'s':''}</span></div></div>`;
+}
+function renderLog(){
+  const q=(document.getElementById('logSearch').value||'').toLowerCase().trim();
+  const arr=Object.values(getPatients()).sort((a,b)=>lastTime(b)-lastTime(a));
+  const filtered=arr.filter(p=>!q||(p.mrn||'').toLowerCase().includes(q)||(p.name||'').toLowerCase().includes(q)||(p.dob||'').toLowerCase().includes(q));
+  document.getElementById('logCount').textContent=arr.length?`${arr.length} patient${arr.length!==1?'s':''}`+(q?` · ${filtered.length} match`:''):'';
+  const list=document.getElementById('logList');
+  if(!arr.length)list.innerHTML=emptyState('No records yet','Complete an assessment and tap “Save to Log”.');
+  else if(!filtered.length)list.innerHTML=emptyState('No matches','Try a different MRN, name, or date of birth.');
+  else list.innerHTML=filtered.map(patientCard).join('');
+}
+function visitHTML(v){
+  const cls={surg:'vt-surg',dfu:'vt-dfu',pi:'vt-pi'}[v.tool]||'';
+  const tlabel={surg:'SURG',dfu:'DFU',pi:'PI'}[v.tool]||(v.tool||'').toUpperCase();
+  let body='';
+  (v.sections||[]).forEach(sec=>{if(!sec.items||!sec.items.length)return;
+    body+=`<div class="vsec">${esc(sec.title)}</div>`;
+    sec.items.forEach(it=>{body+=`<div class="vrow"><span class="vk">${esc(it.label)}</span><span class="vv">${esc(it.value)}</span></div>`;});
+  });
+  if(!body)body='<div class="vrow"><span class="vv">No structured fields recorded.</span></div>';
+  if(v.images&&v.images.length)body+=`<div class="vsec">Wound photography</div><div class="vimg-grid">${v.images.map(u=>`<img src="${escAttr(u)}" alt="wound photo">`).join('')}</div>`;
+  const sc=v.score||{};
+  const scoreLine=(sc.num&&sc.num!=='–')?`<div class="vh-score">${esc(sc.num)}<small>${esc((sc.label||'').replace(/ score$/,''))}</small></div>`:'';
+  return `<div class="visit"><div class="visit-h" onclick="this.parentElement.classList.toggle('open')">
+    <span class="vt ${cls}">${tlabel}</span>
+    <div class="vh-main"><div class="vh-title">${esc(v.toolTitle)}${v.visitNo?` · Visit ${esc(v.visitNo)}`:''}</div>
+      <div class="vh-sub">${esc(v.date||fmtDate(v.savedAt))}${v.nurse?` · ${esc(v.nurse)}`:''}${sc.value?` · ${esc(sc.value)}`:''}</div></div>
+    ${scoreLine}<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
+    <div class="visit-b"><div class="vgrid">${body}</div><button class="del-visit" onclick="deleteVisit('${v.id}')">Delete this visit</button></div></div>`;
+}
+function openPatient(mrn){
+  const p=getPatients()[mrn];if(!p)return;openMrn=mrn;
+  document.getElementById('logList').style.display='none';
+  document.querySelector('#tool-log .panel.no-print-log').style.display='none';
+  const d=document.getElementById('logDetail');d.style.display='';
+  const md=p.visits.filter(v=>v.physician)[0];
+  d.innerHTML=`<div class="panel"><div class="panel-b">
+    <div class="no-print-log" style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="btn btn-ghost" onclick="closePatient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg><span>Back to list</span></button>
+      <button class="btn btn-primary" style="margin-left:auto" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-4a2 2 0 012-2h16a2 2 0 012 2v4a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg><span>Print / Save PDF</span></button>
+    </div>
+    <div class="pt-head"><div class="av">${esc(initials(p.name))}</div>
+      <div><h3 class="jakarta">${esc(p.name||'(unnamed)')}</h3>
+        <div class="ph-meta"><span class="mono">MRN ${esc(p.mrn)}</span>${p.dob?`<span>DOB <b>${esc(p.dob)}</b></span>`:''}<span><b>${p.visits.length}</b> visit${p.visits.length!==1?'s':''}</span>${md?`<span>Referring: <b>${esc(md.physician)}</b></span>`:''}</div></div></div>
+    ${[...p.visits].reverse().map(visitHTML).join('')}
+  </div></div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function closePatient(){
+  openMrn=null;
+  document.getElementById('logDetail').style.display='none';
+  document.getElementById('logList').style.display='';
+  document.querySelector('#tool-log .panel.no-print-log').style.display='';
+  renderLog();
+}
+function deleteVisit(vid){
+  if(!openMrn)return;
+  if(!confirm('Delete this visit from the patient record? This cannot be undone.'))return;
+  const patients=getPatients();const p=patients[openMrn];if(!p)return;
+  p.visits=p.visits.filter(v=>v.id!==vid);
+  if(!p.visits.length)delete patients[openMrn];
+  saveJSON('curanova_patients',patients);
+  toast('Visit deleted');
+  if(patients[openMrn])openPatient(openMrn);else closePatient();
+}
+document.addEventListener('click',e=>{const card=e.target.closest('.pt-card');if(card)openPatient(card.dataset.mrn);});
+document.getElementById('logSearch').addEventListener('input',()=>{if(openMrn)closePatient();else renderLog();});
+
+/* ---- init ---- */
+renderDatalists();
+
+/* ---------------- Wire up ---------------- */
+document.addEventListener('change',recalc);
+document.addEventListener('input',e=>{if(e.target.matches('#ssiSigns input,#ssiDepth input'))recalc();});
+recalc();
+</script>
+</body>
+</html>
