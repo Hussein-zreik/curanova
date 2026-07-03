@@ -323,6 +323,17 @@
   .chipbtn.ghost{border-style:dashed;color:var(--muted)}
   .pt-card .due-chip{font-size:10px;font-weight:700;font-family:'Plus Jakarta Sans';padding:2px 8px;border-radius:20px;background:#FBEED2;color:#8A5A12}
   .pt-card .due-chip.over{background:#FDE0DB;color:#8A2B22}
+
+  /* ---------- mini score summary (nutrition / PUSH / WIfI) ---------- */
+  .mini-score{display:none;align-items:center;gap:12px;margin-top:12px;padding:11px 14px;border-radius:11px;
+    background:var(--canvas-2);border:1px solid var(--border-2)}
+  .mini-score.show{display:flex}
+  .mini-score .mt{font-family:'IBM Plex Mono';font-weight:600;font-size:22px;color:var(--navy);line-height:1;flex:none}
+  .mini-score .mt small{font-size:12px;color:var(--muted-2)}
+  .mini-score .mmeta{min-width:0}
+  .mini-score .ms-l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .mini-score .ms-v{font-family:'Plus Jakarta Sans';font-weight:700;font-size:13.5px;margin-top:1px}
+  .mini-score .ms-chip{margin-left:auto;font-size:11px;font-weight:700;font-family:'Plus Jakarta Sans';padding:4px 11px;border-radius:20px;color:#fff;flex:none}
   .pt-card .pc-visits{flex:none;text-align:right}
   .pt-card .pc-visits b{font-family:'IBM Plex Mono';font-size:18px;color:var(--navy);display:block;line-height:1}
   .pt-card .pc-visits span{font-size:10px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.04em}
@@ -530,6 +541,12 @@
   <div class="panel" id="cdsPanel">
     <div class="panel-h"><span class="n" style="background:var(--high)">!</span><h3>Clinical Alerts</h3><span class="h-sub">Automated wound surveillance</span></div>
     <div class="panel-b"><div class="cds-list" id="cdsList"></div></div>
+  </div>
+
+  <!-- ===== SHARED: Nutrition screen (MST) ===== -->
+  <div class="panel" id="nutritionPanel">
+    <div class="panel-h"><span class="n" style="background:var(--mild)">◍</span><h3>Nutrition Screen</h3><span class="h-sub">Malnutrition Screening Tool (MST) · nutrition drives healing</span></div>
+    <div class="panel-b"><div id="nutItems"></div><div id="nutSummary" class="mini-score"></div></div>
   </div>
 
   <!-- ================================================================= -->
@@ -749,9 +766,19 @@
       </div>
     </div>
 
+    <!-- WIfI classification -->
+    <div class="panel">
+      <div class="panel-h"><span class="n">5</span><h3>WIfI Classification</h3><span class="h-sub">SVS · Wound · Ischaemia · foot Infection — amputation risk</span></div>
+      <div class="panel-b">
+        <div class="callout info"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg><span>Grade each 0–3. Combined <b>WIfI</b> gives an indicative amputation-risk stage — a triage aid, not a substitute for vascular assessment.</span></div>
+        <div id="wifiItems" style="margin-top:12px"></div>
+        <div id="wifiSummary" class="mini-score"></div>
+      </div>
+    </div>
+
     <!-- Offloading & plan -->
     <div class="panel">
-      <div class="panel-h"><span class="n">5</span><h3>Offloading &amp; Plan</h3></div>
+      <div class="panel-h"><span class="n">6</span><h3>Offloading &amp; Plan</h3></div>
       <div class="panel-b">
         <div class="grid g2">
           <div class="field"><label>Offloading in place</label><select><option value="">Select…</option><option>None</option><option>Total contact cast (TCC)</option><option>Removable knee-high walker</option><option>Ankle-high device</option><option>Felted foam + footwear</option><option>Therapeutic footwear</option></select></div>
@@ -890,8 +917,14 @@
       </div>
     </div>
 
+    <!-- PUSH tool -->
     <div class="panel">
-      <div class="panel-h"><span class="n">5</span><h3>Prevention &amp; Plan</h3></div>
+      <div class="panel-h"><span class="n">5</span><h3>PUSH Tool</h3><span class="h-sub">Pressure Ulcer Scale for Healing · 0–17 · falling = healing</span></div>
+      <div class="panel-b"><div id="pushItems"></div><div id="pushSummary" class="mini-score"></div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">6</span><h3>Prevention &amp; Plan</h3></div>
       <div class="panel-b">
         <div class="grid g2">
           <div class="field"><label>Support surface</label><select><option value="">Select…</option><option>Standard mattress</option><option>Foam pressure-redistributing</option><option>Alternating-pressure / air</option><option>Cushion (seating)</option></select></div>
@@ -1097,6 +1130,7 @@ function recalc(){
   else return;
   syncPrintScore();
   updateHealing();
+  updateInstruments();
   renderCDS();
 }
 
@@ -1213,7 +1247,7 @@ function resetActive(){
   if(active==='dfu'&&footMap){footMap.querySelectorAll('.site').forEach(s=>{s.dataset.state=0;s.classList.remove('felt','notfelt');});updateMono();}
   el.querySelectorAll('[data-pts]').forEach(b=>{b.textContent=b.textContent.includes('/')?'0/1':'–';b.style.color='var(--muted-2)';});
   toolImages[active]=[];renderImgGrid(active);
-  bwatSizeAuto=true;
+  bwatSizeAuto=true;pushAreaAuto=true;
   recalc();
 }
 
@@ -1606,13 +1640,77 @@ function buildBWAT(){
   metricsPanel.addEventListener('change',e=>{if(e.target.name==='bw_size')bwatSizeAuto=false;});
 }
 
-/* place the shared patient / metrics / alerts panels into the active tool */
+/* place the shared patient / metrics / alerts / nutrition panels into the active tool */
 function placeShared(k){
   tools[k].prepend(patientPanel);
   tools[k].insertBefore(cdsPanel, patientPanel.nextSibling);
   const photo=tools[k].querySelector('[data-imgdrop]');
   const photoPanel=photo?photo.closest('.panel'):null;
-  if(photoPanel)tools[k].insertBefore(metricsPanel, photoPanel);else tools[k].appendChild(metricsPanel);
+  if(photoPanel){tools[k].insertBefore(metricsPanel, photoPanel);tools[k].insertBefore(nutritionPanel, photoPanel);}
+  else {tools[k].appendChild(metricsPanel);tools[k].appendChild(nutritionPanel);}
+}
+
+/* ---- extra validated instruments: Nutrition (MST) · PUSH · WIfI ---- */
+const nutritionPanel=document.getElementById('nutritionPanel');
+let pushAreaAuto=true;
+function buildScored(host,items){
+  host.innerHTML=items.map(it=>`<div class="scored"><div class="scored-h"><span class="t">${it.t}${it.sub?`<small>${it.sub}</small>`:''}</span><span class="pts" data-pts>–</span></div>
+    <div class="opts br">${it.o.map((o,i)=>`<div class="opt"><input type="radio" name="${it.k}" value="${o.v}" id="${it.k}_${i}"><label for="${it.k}_${i}"><span class="sc">▪ ${o.v}</span>${o.l}</label></div>`).join('')}</div></div>`).join('');
+}
+const NUT=[
+ {k:'nu_loss',t:'Unintentional weight loss (recent)',o:[{v:0,l:'None'},{v:1,l:'1–5 kg'},{v:2,l:'6–10 kg'},{v:3,l:'11–15 kg'},{v:4,l:'>15 kg'},{v:2,l:'Unsure'}]},
+ {k:'nu_app', t:'Eating poorly / poor appetite',      o:[{v:0,l:'No'},{v:1,l:'Yes'}]}
+];
+const PUSH=[
+ {k:'pu_area',t:'Surface area (L×W)',sub:'auto from measurement',o:[{v:0,l:'0'},{v:1,l:'<0.3'},{v:2,l:'0.3–0.6'},{v:3,l:'0.7–1.0'},{v:4,l:'1.1–2.0'},{v:5,l:'2.1–3.0'},{v:6,l:'3.1–4.0'},{v:7,l:'4.1–8.0'},{v:8,l:'8.1–12'},{v:9,l:'12.1–24'},{v:10,l:'>24 cm²'}]},
+ {k:'pu_exu', t:'Exudate amount',o:[{v:0,l:'None'},{v:1,l:'Light'},{v:2,l:'Moderate'},{v:3,l:'Heavy'}]},
+ {k:'pu_tis', t:'Tissue type',   o:[{v:0,l:'Closed'},{v:1,l:'Epithelial'},{v:2,l:'Granulation'},{v:3,l:'Slough'},{v:4,l:'Necrotic'}]}
+];
+const WIFI=[
+ {k:'wifi_w', t:'W — Wound / depth',o:[{v:0,l:'No ulcer'},{v:1,l:'Small, shallow'},{v:2,l:'Deep, exposed structures'},{v:3,l:'Extensive / gangrene'}]},
+ {k:'wifi_i', t:'I — Ischaemia',sub:'ABI / toe pressure',o:[{v:0,l:'ABI ≥0.80'},{v:1,l:'0.60–0.79'},{v:2,l:'0.40–0.59'},{v:3,l:'<0.40'}]},
+ {k:'wifi_fi',t:'fI — Foot infection',o:[{v:0,l:'None'},{v:1,l:'Mild'},{v:2,l:'Moderate'},{v:3,l:'Severe'}]}
+];
+function buildInstruments(){
+  buildScored(document.getElementById('nutItems'),NUT);
+  buildScored(document.getElementById('pushItems'),PUSH);
+  buildScored(document.getElementById('wifiItems'),WIFI);
+  document.getElementById('pushItems').addEventListener('change',e=>{if(e.target.name==='pu_area')pushAreaAuto=false;});
+}
+function sumGroups(host,names){
+  let total=0,done=0;
+  names.forEach(n=>{const first=host.querySelector(`[name="${n}"]`);if(!first)return;
+    const s=host.querySelector(`[name="${n}"]:checked`);const badge=first.closest('.scored').querySelector('[data-pts]');
+    if(s){done++;total+=+s.value;badge.textContent=s.value;badge.style.color=+s.value>=3?'var(--high)':+s.value>=2?'var(--mod)':'var(--ok)';}
+    else{badge.textContent='–';badge.style.color='var(--muted-2)';}});
+  return {total,done,complete:done===names.length};
+}
+function miniScore(id,total,max,label,band){
+  const el=document.getElementById(id);if(!el)return;el.classList.add('show');
+  el.innerHTML=`<div class="mt">${total}<small>/${max}</small></div><div class="mmeta"><div class="ms-l">${label}</div><div class="ms-v">${band.v}</div></div><span class="ms-chip" style="background:${band.c}">${band.tag}</span>`;
+}
+function pushAreaBand(a){if(a<=0)return 0;if(a<0.3)return 1;if(a<0.7)return 2;if(a<=1.0)return 3;if(a<=2.0)return 4;if(a<=3.0)return 5;if(a<=4.0)return 6;if(a<=8.0)return 7;if(a<=12.0)return 8;if(a<=24.0)return 9;return 10;}
+let mstScore=null, wifiRisk=null, pushScore=null;
+function updateInstruments(){
+  mstScore=null;wifiRisk=null;pushScore=null;
+  // Nutrition (shared, all tools)
+  const nutHost=document.getElementById('nutItems');
+  if(nutHost){const r=sumGroups(nutHost,['nu_loss','nu_app']);
+    if(r.done){mstScore=r.total;const risk=r.total>=2;miniScore('nutSummary',r.total,5,'MST — malnutrition screen',risk?{v:'At risk of malnutrition',c:'var(--mod)',tag:'Refer'}:{v:'Low risk',c:'var(--ok)',tag:'OK'});}
+    else document.getElementById('nutSummary').classList.remove('show');}
+  if(active==='pi'){const host=document.getElementById('pushItems');
+    if(host){if(lastHealing&&lastHealing.area!=null&&pushAreaAuto){const el=host.querySelector(`[name="pu_area"][value="${pushAreaBand(lastHealing.area)}"]`);if(el)el.checked=true;}
+      const r=sumGroups(host,['pu_area','pu_exu','pu_tis']);
+      if(r.complete){pushScore=r.total;const band=r.total<=6?{v:'Healing / small',c:'var(--ok)',tag:'Healing'}:r.total<=11?{v:'Progressing',c:'var(--mild)',tag:'Watch'}:{v:'Large / stalled',c:'var(--mod)',tag:'Escalate'};miniScore('pushSummary',r.total,17,'PUSH total · falling = healing',band);}
+      else document.getElementById('pushSummary').classList.remove('show');}}
+  if(active==='dfu'){const host=document.getElementById('wifiItems');
+    if(host){const r=sumGroups(host,['wifi_w','wifi_i','wifi_fi']);
+      if(r.complete){const w=+host.querySelector('[name=wifi_w]:checked').value,i=+host.querySelector('[name=wifi_i]:checked').value,fi=+host.querySelector('[name=wifi_fi]:checked').value;
+        const hi=Math.max(w,i,fi);const band=(hi>=3||(fi>=2&&i>=2))?{v:'High — Stage 4',c:'var(--severe)',tag:'Urgent'}:(hi===2||(fi>=1&&i>=1))?{v:'Moderate — Stage 3',c:'var(--mod)',tag:'Escalate'}:(w+i+fi>=1)?{v:'Low — Stage 1–2',c:'var(--mild)',tag:'Monitor'}:{v:'Very low — Stage 1',c:'var(--ok)',tag:'Low'};
+        wifiRisk={w,i,fi,tag:band.tag,label:`W${w} I${i} fI${fi}`};
+        const el=document.getElementById('wifiSummary');el.classList.add('show');
+        el.innerHTML=`<div class="mt" style="font-size:16px">${wifiRisk.label}</div><div class="mmeta"><div class="ms-l">WIfI — amputation risk (indicative)</div><div class="ms-v">${band.v}</div></div><span class="ms-chip" style="background:${band.c}">${band.tag}</span>`;}
+      else document.getElementById('wifiSummary').classList.remove('show');}}
 }
 
 /* live reads */
@@ -1697,10 +1795,15 @@ function evaluateAlerts(h){
     else if(h.bwat!=null&&h.bwat>=CDS.bwatStalled)
       add('warn',`<b>BWAT ${h.bwat}/65 — stalled:</b> reassess dressing, infection and offloading / perfusion.`);
   }
+  // nutrition (shared across all tools)
+  if(mstScore!=null&&mstScore>=2)
+    add('warn',`<b>Malnutrition risk (MST ${mstScore}):</b> impairs healing — refer to dietitian &amp; optimise protein/calorie intake.`);
   if(active==='surg'){
     if([...document.querySelectorAll('#ssiSigns input:checked')].length>=1)
       add('crit',`<b>Suspected SSI:</b> signs of surgical-site infection present — notify the referring surgeon.`);
   }else if(active==='dfu'){
+    if(wifiRisk&&(wifiRisk.tag==='Urgent'||wifiRisk.tag==='Escalate'))
+      add(wifiRisk.tag==='Urgent'?'crit':'warn',`<b>WIfI ${wifiRisk.label} — ${wifiRisk.tag==='Urgent'?'high':'moderate'} amputation risk:</b> urgent vascular + multidisciplinary foot-team review.`);
     const idsa=document.querySelector('#tool-dfu [name=idsa]:checked');
     if(idsa&&idsa.value==='Severe')add('crit',`<b>Severe DFU infection (IWGDF/IDSA 4):</b> systemic toxicity — urgent referral / possible admission.`);
     else if(idsa&&idsa.value==='Moderate')add('warn',`<b>Moderate DFU infection:</b> deeper / extensive — arrange prompt medical review.`);
@@ -1978,6 +2081,7 @@ function restoreDraft(){
 
 /* ---- init ---- */
 buildBWAT();
+buildInstruments();
 placeShared('surg');
 renderDatalists();
 restoreDraft();
