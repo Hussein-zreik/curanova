@@ -1000,8 +1000,9 @@
   <div class="lock-card">
     <div class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.35-9.5-9C1 9 2.5 5 6 5c2 0 3.2 1.2 4 2.5C10.8 6.2 12 5 14 5c1.2 0 2.2.4 3 1.1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 12.5h2l1.5-3 2 6 1.5-3h1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <h2 class="jakarta">CuraNova — Secure Access</h2>
-    <p>Enter the access code your administrator shared with you to open the shared patient log.</p>
-    <input id="lockCode" type="password" placeholder="Access code" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitLock()">
+    <p>Enter your access code to open the shared patient log. Partners with their own login can change the email below.</p>
+    <input id="lockEmail" type="email" placeholder="Login email" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('lockCode').focus()">
+    <input id="lockCode" type="password" placeholder="Access code / password" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitLock()">
     <div class="lock-err" id="lockErr"></div>
     <button class="btn btn-primary" id="lockBtn" onclick="submitLock()">Unlock</button>
     <div class="lock-foot">🔒 Patient records are shared securely across your team.</div>
@@ -1401,6 +1402,8 @@ function saveToLog(){
   patients[pv.mrn]=p;
   if(saveJSON('curanova_patients',patients)){
     cloudUpsertPatient(p);
+    audit('save',`MRN ${pv.mrn} · ${tools[active].dataset.title}`+(isNew?' (new record)':` (visit ${p.visits.length})`));
+    clearDraft();
     toolImages[active]=[];renderImgGrid(active);
     const crit=alerts.filter(a=>a.sev==='crit');
     toast(isNew?`New record created — ${p.name}`:`Visit ${p.visits.length} added — ${p.name}`);
@@ -1524,7 +1527,7 @@ function openPatient(mrn){
   d.innerHTML=`<div class="panel"><div class="panel-b">
     <div class="no-print-log" style="display:flex;gap:8px;margin-bottom:16px">
       <button class="btn btn-ghost" onclick="closePatient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg><span>Back to list</span></button>
-      <button class="btn btn-primary" style="margin-left:auto" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-4a2 2 0 012-2h16a2 2 0 012 2v4a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg><span>Print / Save PDF</span></button>
+      <button class="btn btn-primary" style="margin-left:auto" onclick="printPatient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-4a2 2 0 012-2h16a2 2 0 012 2v4a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg><span>Print / Save PDF</span></button>
     </div>
     <div class="pt-head"><div class="av">${esc(initials(p.name))}</div>
       <div><h3 class="jakarta">${esc(p.name||'(unnamed)')}</h3>
@@ -1539,9 +1542,10 @@ function closePatient(){
   openMrn=null;
   document.getElementById('logDetail').style.display='none';
   document.getElementById('logList').style.display='';
-  document.querySelector('#tool-log .panel.no-print-log').style.display='';
+  document.querySelectorAll('#tool-log .panel.no-print-log,#dashPanel').forEach(x=>x.style.display='');
   renderLog();
 }
+function printPatient(){ if(openMrn)audit('print',`MRN ${openMrn}`); window.print(); }
 function deleteVisit(vid){
   if(!openMrn)return;
   if(!confirm('Delete this visit from the patient record? This cannot be undone.'))return;
@@ -1551,6 +1555,7 @@ function deleteVisit(vid){
   if(!p.visits.length)delete patients[mrn];
   saveJSON('curanova_patients',patients);
   if(patients[mrn])cloudUpsertPatient(patients[mrn]);else cloudDeletePatient(mrn);
+  audit('delete-visit',`MRN ${mrn} · visit ${vid}`);
   toast('Visit deleted');
   if(patients[mrn])openPatient(mrn);else closePatient();
 }
@@ -1816,13 +1821,17 @@ async function cloudInit(){
     if(session) await onAuthed(); else showLock();
   }catch(e){ console.warn('cloudInit',e); showLock(); }
 }
+let currentUser='';
 async function onAuthed(){
   cloudReady=true; hideLock();
+  try{ const {data:{user}}=await sb.auth.getUser(); currentUser=user?.email||CLOUD.email; }catch(e){ currentUser=CLOUD.email; }
   await cloudPull();
+  await flushQueue();
   renderDatalists();
   if(active==='log') renderLog(); else recalc();
   updateCloudBadge();
   subscribeRealtime();
+  audit('login','signed in');
 }
 async function cloudPull(){
   try{
@@ -1834,15 +1843,52 @@ async function cloudPull(){
     if(lst&&lst.data) localStorage.setItem('curanova_lists', JSON.stringify(lst.data));
   }catch(e){ console.warn('cloudPull',e); toast('Could not reach shared records — showing local copy',true); }
 }
-async function cloudUpsertPatient(p){
+/* ---- offline sync queue: never lose a write ---- */
+function getQueue(){return loadJSON('curanova_queue',[]);}
+function queueOp(op){
+  const q=getQueue().filter(o=>!(o.type===op.type && o.mrn===op.mrn)); // dedupe same target
+  q.push(op); saveJSON('curanova_queue',q); updateCloudBadge();
+}
+async function flushQueue(){
   if(!cloudReady) return;
+  let q=getQueue(); if(!q.length) return;
+  const remaining=[];
+  for(const op of q){
+    try{
+      if(op.type==='delete'){ const {error}=await sb.from('patients').delete().eq('mrn',op.mrn); if(error)throw error; }
+      else if(op.type==='lists'){ const {error}=await sb.from('app_lists').upsert({id:1,data:loadJSON('curanova_lists',{})}); if(error)throw error; }
+      else { const p=getPatients()[op.mrn]; if(p){ const {error}=await sb.from('patients').upsert({mrn:p.mrn,name:p.name||'',dob:p.dob||'',data:p,updated_at:new Date().toISOString()}); if(error)throw error; } }
+    }catch(e){ remaining.push(op); }
+  }
+  saveJSON('curanova_queue',remaining); updateCloudBadge();
+  if(!remaining.length && q.length) toast('Offline changes synced');
+}
+async function cloudUpsertPatient(p){
+  if(!cloudEnabled) return;
+  if(!cloudReady){ queueOp({type:'patient',mrn:p.mrn}); return; }
   try{
     const {error}=await sb.from('patients').upsert({mrn:p.mrn,name:p.name||'',dob:p.dob||'',data:p,updated_at:new Date().toISOString()});
     if(error) throw error;
-  }catch(e){ console.warn('upsert',e); toast('Saved on this device — not yet synced (offline?)',true); }
+  }catch(e){ console.warn('upsert',e); queueOp({type:'patient',mrn:p.mrn}); toast('Saved on this device — will sync when reconnected',true); }
 }
-async function cloudDeletePatient(mrn){ if(!cloudReady)return; try{await sb.from('patients').delete().eq('mrn',mrn);}catch(e){console.warn('delete',e);} }
-async function cloudSaveLists(){ if(!cloudReady)return; try{await sb.from('app_lists').upsert({id:1,data:loadJSON('curanova_lists',{})});}catch(e){console.warn('lists',e);} }
+async function cloudDeletePatient(mrn){
+  if(!cloudEnabled) return;
+  if(!cloudReady){ queueOp({type:'delete',mrn}); return; }
+  try{ const {error}=await sb.from('patients').delete().eq('mrn',mrn); if(error)throw error; }catch(e){ console.warn('delete',e); queueOp({type:'delete',mrn}); }
+}
+async function cloudSaveLists(){
+  if(!cloudEnabled) return;
+  if(!cloudReady){ queueOp({type:'lists',mrn:'_'}); return; }
+  try{ const {error}=await sb.from('app_lists').upsert({id:1,data:loadJSON('curanova_lists',{})}); if(error)throw error; }catch(e){ console.warn('lists',e); queueOp({type:'lists',mrn:'_'}); }
+}
+/* ---- audit trail (local always; cloud best-effort) ---- */
+function audit(action,detail){
+  const entry={ts:new Date().toISOString(),user:currentUser||'local',action,detail:detail||''};
+  const log=loadJSON('curanova_audit',[]); log.push(entry);
+  while(log.length>1000)log.shift();
+  saveJSON('curanova_audit',log);
+  if(cloudReady){ try{ sb.from('audit').insert({ts:entry.ts,actor:entry.user,action:entry.action,detail:entry.detail}); }catch(e){} }
+}
 function subscribeRealtime(){
   try{
     sb.channel('curanova-patients').on('postgres_changes',{event:'*',schema:'public',table:'patients'},()=>{
@@ -1852,34 +1898,95 @@ function subscribeRealtime(){
 }
 function updateCloudBadge(){
   const el=document.getElementById('cloudStatus'); if(!el)return;
-  if(cloudReady) el.innerHTML=`<span class="cloud-chip"><span class="cd"></span>Shared · synced</span><span class="cloud-signout" onclick="cloudSignOut()">Sign out</span>`;
-  else if(cloudEnabled) el.innerHTML=`<span class="cloud-chip off"><span class="cd"></span>Offline — local copy</span>`;
-  else el.innerHTML='';
+  const pending=getQueue().length;
+  if(cloudReady) el.innerHTML=`<span class="cloud-chip"><span class="cd"></span>Shared · ${pending?pending+' pending':'synced'}</span>`
+    +`<span class="cloud-signout" onclick="showAudit()">Audit</span><span class="cloud-signout" onclick="cloudSignOut()">Sign out${currentUser?' ('+esc(currentUser.split('@')[0])+')':''}</span>`;
+  else if(cloudEnabled) el.innerHTML=`<span class="cloud-chip off"><span class="cd"></span>Offline${pending?' — '+pending+' pending':' — local copy'}</span>`;
+  else el.innerHTML=`<span class="cloud-signout" onclick="showAudit()">Audit</span>`;
 }
-function showLock(){ document.getElementById('lockScreen').classList.add('show'); document.getElementById('lockCode').focus(); }
+function showLock(){ const em=document.getElementById('lockEmail'); if(em&&!em.value)em.value=CLOUD.email; document.getElementById('lockScreen').classList.add('show'); document.getElementById('lockCode').focus(); }
 function hideLock(){ document.getElementById('lockScreen').classList.remove('show'); }
 async function submitLock(){
-  const inp=document.getElementById('lockCode'), btn=document.getElementById('lockBtn'), err=document.getElementById('lockErr');
-  const code=(inp.value||'').trim(); if(!code){inp.focus();return;}
+  const em=document.getElementById('lockEmail'), inp=document.getElementById('lockCode'), btn=document.getElementById('lockBtn'), err=document.getElementById('lockErr');
+  const email=((em&&em.value)||CLOUD.email||'').trim(), code=(inp.value||'').trim(); if(!code){inp.focus();return;}
   btn.disabled=true; btn.textContent='Checking…'; err.textContent='';
   try{
-    const {error}=await sb.auth.signInWithPassword({email:CLOUD.email,password:code});
-    if(error){ err.textContent='Incorrect access code. Please try again.'; inp.select(); }
+    const {error}=await sb.auth.signInWithPassword({email,password:code});
+    if(error){ err.textContent='Incorrect email or access code. Please try again.'; inp.select(); }
     else await onAuthed();
   }catch(e){ err.textContent='Could not connect. Check your network and try again.'; }
   btn.disabled=false; btn.textContent='Unlock';
 }
-async function cloudSignOut(){ try{ if(sb) await sb.auth.signOut(); }catch(e){} location.reload(); }
+async function cloudSignOut(){ audit('logout','signed out'); try{ if(sb) await sb.auth.signOut(); }catch(e){} location.reload(); }
+/* ---- audit viewer ---- */
+function showAudit(){
+  const log=[...loadJSON('curanova_audit',[])].reverse();
+  const rows=log.length? log.map(e=>`<tr><td>${esc(fmtDateTime(e.ts))}</td><td>${esc((e.user||'').split('@')[0])}</td><td><b>${esc(e.action)}</b></td><td>${esc(e.detail)}</td></tr>`).join('')
+                       : '<tr><td colspan="4" style="color:var(--muted-2);text-align:center;padding:20px">No activity recorded yet.</td></tr>';
+  const d=document.getElementById('logDetail');
+  document.getElementById('logList').style.display='none';
+  document.querySelectorAll('#tool-log .panel.no-print-log,#dashPanel').forEach(x=>x.style.display='none');
+  d.style.display='';
+  d.innerHTML=`<div class="panel"><div class="panel-b">
+    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+      <button class="btn btn-ghost" onclick="closePatient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg><span>Back</span></button>
+      <h3 class="jakarta" style="margin-left:4px">Audit log</h3><span style="margin-left:auto;font-size:12px;color:var(--muted)">${log.length} event${log.length!==1?'s':''}</span>
+    </div>
+    <div style="overflow-x:auto"><table class="traj-tbl" style="min-width:520px"><thead><tr><th>When</th><th>User</th><th>Action</th><th>Detail</th></tr></thead><tbody>${rows}</tbody></table></div>
+  </div></div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function fmtDateTime(iso){try{const d=new Date(iso);return isNaN(d)?iso:d.toLocaleString();}catch(e){return iso;}}
+
+/* =================================================================
+   DRAFT AUTOSAVE / RESUME — never lose an in-progress assessment
+   ================================================================= */
+const DRAFT_SEL='#patientPanel input,#patientPanel select,#patientPanel textarea,#metricsPanel input,#metricsPanel select,#metricsPanel textarea,.tool input,.tool select,.tool textarea';
+function ctrlKey(el){
+  const shared=el.closest('#patientPanel,#metricsPanel,#cdsPanel');
+  const scope=shared||el.closest('.tool');
+  if(!scope||scope.id==='tool-log')return null;
+  const list=[...scope.querySelectorAll('input,select,textarea')].filter(c=> shared ? true : !c.closest('#patientPanel,#metricsPanel,#cdsPanel'));
+  const i=list.indexOf(el); return i<0?null:scope.id+'::'+i;
+}
+let draftT;
+function snapshotDraft(){
+  if(!assessTools.includes(active))return;
+  const d={_active:active};
+  document.querySelectorAll(DRAFT_SEL).forEach(el=>{
+    if(el.type==='file'||el.closest('#tool-log'))return;
+    const k=ctrlKey(el); if(!k)return;
+    if(el.type==='radio'||el.type==='checkbox'){ if(el.checked)d[k]=1; }
+    else if((el.value||'')!=='') d[k]=el.value;
+  });
+  if(Object.keys(d).length>1) saveJSON('curanova_draft',d); else clearDraft();
+}
+function scheduleDraft(){ clearTimeout(draftT); draftT=setTimeout(snapshotDraft,600); }
+function clearDraft(){ localStorage.removeItem('curanova_draft'); }
+function restoreDraft(){
+  const d=loadJSON('curanova_draft',null); if(!d)return;
+  if(d._active && assessTools.includes(d._active) && d._active!==active) switchTool(d._active);
+  let any=false;
+  document.querySelectorAll(DRAFT_SEL).forEach(el=>{
+    if(el.type==='file'||el.closest('#tool-log'))return;
+    const k=ctrlKey(el); if(!k||!(k in d))return;
+    if(el.type==='radio'||el.type==='checkbox'){ if(d[k]){el.checked=true;any=true;} }
+    else { el.value=d[k]; any=true; }
+  });
+  if(any){ recalc(); toast('Unsaved draft restored'); }
+}
 
 /* ---- init ---- */
 buildBWAT();
 placeShared('surg');
 renderDatalists();
+restoreDraft();
 cloudInit();
 
 /* ---------------- Wire up ---------------- */
-document.addEventListener('change',recalc);
-document.addEventListener('input',recalc);   // live updates while typing measurements
+document.addEventListener('change',()=>{recalc();scheduleDraft();});
+document.addEventListener('input',()=>{recalc();scheduleDraft();});   // live updates + draft
+window.addEventListener('online',()=>{ if(cloudReady) flushQueue(); });
 recalc();
 </script>
 </body>

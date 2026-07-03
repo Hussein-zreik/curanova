@@ -45,9 +45,28 @@ create policy "team read/write patients" on patients
 create policy "team read/write lists" on app_lists
   for all to authenticated using (true) with check (true);
 
+-- shared audit trail (who did what, when) — optional but recommended
+create table if not exists audit (
+  id     bigint generated always as identity primary key,
+  ts     timestamptz default now(),
+  actor  text, action text, detail text
+);
+alter table audit enable row level security;
+drop policy if exists "team rw audit" on audit;
+create policy "team rw audit" on audit for all to authenticated using (true) with check (true);
+
 -- enable real-time so partners see each other's saves live
 alter publication supabase_realtime add table patients;
 ```
+
+> Already ran the earlier SQL? Just run this whole block again — it's safe
+> (idempotent), and it adds the new **audit** table used by the audit log.
+
+### Per-partner logins (optional)
+The lock screen has an **email** field (pre-filled with the shared email). To give
+a partner their **own** login instead of the shared code, add another user in
+**Authentication → Users** with their email + password; they enter those two on
+the lock screen. The audit log then attributes actions to each person.
 
 ## 3. Create the shared login (this password = your access code)
 1. Go to **Authentication → Users → Add user → Create new user**.
