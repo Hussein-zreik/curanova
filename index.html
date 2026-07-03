@@ -60,7 +60,7 @@
   .tab.active{background:var(--canvas);color:var(--navy)}
   .tab .dot{width:8px;height:8px;border-radius:50%;flex:none}
   .tab.active .dot{box-shadow:0 0 0 3px rgba(13,148,136,.15)}
-  .d-surg{background:#6366F1}.d-dfu{background:var(--teal)}.d-pi{background:#DD6B20}
+  .d-surg{background:#6366F1}.d-dfu{background:var(--teal)}.d-pi{background:#DD6B20}.d-ven{background:#2C7BC0}.d-art{background:#D1483A}
 
   /* ---------- Cards / sections ---------- */
   .panel{background:var(--paper);border:1px solid var(--border);border-radius:var(--r);
@@ -382,7 +382,7 @@
     border-bottom:1px solid var(--border-2);cursor:pointer}
   .visit-h .vt{font-family:'IBM Plex Mono';font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;
     color:#fff;flex:none}
-  .vt-surg{background:#6366F1}.vt-dfu{background:var(--teal)}.vt-pi{background:var(--mod)}
+  .vt-surg{background:#6366F1}.vt-dfu{background:var(--teal)}.vt-pi{background:var(--mod)}.vt-ven{background:#2C7BC0}.vt-art{background:#D1483A}
   .visit-h .vh-main{flex:1;min-width:0}
   .visit-h .vh-title{font-weight:700;font-size:13.5px;color:var(--navy)}
   .visit-h .vh-sub{font-size:11.5px;color:var(--muted);margin-top:1px}
@@ -512,6 +512,8 @@
       <button class="tab active" data-tool="surg"><span class="dot d-surg"></span>Surgical Wound</button>
       <button class="tab" data-tool="dfu"><span class="dot d-dfu"></span>Diabetic Foot</button>
       <button class="tab" data-tool="pi"><span class="dot d-pi"></span>Pressure Injury</button>
+      <button class="tab" data-tool="ven"><span class="dot d-ven"></span>Venous Ulcer</button>
+      <button class="tab" data-tool="art"><span class="dot d-art"></span>Arterial Ulcer</button>
       <button class="tab" data-tool="log" style="margin-left:auto"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2.4"/><path d="M22.6 21.6L21 20"/></svg>Patient Log</button>
     </nav>
   </div>
@@ -995,6 +997,172 @@
   </section>
 
   <!-- ================================================================= -->
+  <!-- ==================== TOOL 4: VENOUS LEG ULCER ==================== -->
+  <!-- ================================================================= -->
+  <section class="tool" id="tool-ven" data-title="Venous Leg Ulcer Assessment">
+    <div class="panel">
+      <div class="panel-h"><span class="n">1</span><h3>Venous Ulcer Context</h3></div>
+      <div class="panel-b">
+        <div class="grid g3 keep">
+          <div class="field"><label>Affected leg</label><select><option value="">Select…</option><option>Right</option><option>Left</option><option>Bilateral</option></select></div>
+          <div class="field"><label>Ulcer location</label><select><option value="">Select…</option><option>Medial gaiter</option><option>Lateral gaiter</option><option>Malleolar</option><option>Above ankle</option><option>Circumferential</option><option>Other</option></select></div>
+          <div class="field"><label>Duration</label><input type="text" placeholder="e.g. 6 weeks"></div>
+          <div class="field"><label>Prior venous ulcer?</label><select><option value="">Select…</option><option>No</option><option>Yes — first recurrence</option><option>Yes — recurrent</option></select></div>
+          <div class="field"><label>Varicose veins</label><select><option value="">Select…</option><option>None</option><option>Present</option><option>Prominent</option></select></div>
+          <div class="field"><label>Oedema</label><select><option value="">Select…</option><option>None</option><option>Mild</option><option>Moderate</option><option>Severe / pitting</option></select></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">2</span><h3>CEAP Clinical Class</h3><span class="h-sub">Clinical class C0–C6</span></div>
+      <div class="panel-b">
+        <div class="pills" id="ceapClass" style="margin-top:2px">
+          <div class="pill sev-1"><input type="radio" name="ceap" id="ce0" value="C0"><label for="ce0"><span class="lv">C0</span><span class="lt"><b>No visible venous disease</b></span></label></div>
+          <div class="pill sev-1"><input type="radio" name="ceap" id="ce1" value="C1"><label for="ce1"><span class="lv">C1</span><span class="lt"><b>Telangiectasia / reticular veins</b></span></label></div>
+          <div class="pill sev-1"><input type="radio" name="ceap" id="ce2" value="C2"><label for="ce2"><span class="lv">C2</span><span class="lt"><b>Varicose veins</b></span></label></div>
+          <div class="pill sev-2"><input type="radio" name="ceap" id="ce3" value="C3"><label for="ce3"><span class="lv">C3</span><span class="lt"><b>Oedema</b><span>Venous oedema without skin changes.</span></span></label></div>
+          <div class="pill sev-3"><input type="radio" name="ceap" id="ce4" value="C4"><label for="ce4"><span class="lv">C4</span><span class="lt"><b>Skin changes</b><span>Pigmentation, eczema, lipodermatosclerosis, atrophie blanche.</span></span></label></div>
+          <div class="pill sev-3"><input type="radio" name="ceap" id="ce5" value="C5"><label for="ce5"><span class="lv">C5</span><span class="lt"><b>Healed venous ulcer</b></span></label></div>
+          <div class="pill sev-4"><input type="radio" name="ceap" id="ce6" value="C6"><label for="ce6"><span class="lv">C6</span><span class="lt"><b>Active venous ulcer</b></span></label></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">3</span><h3>Arterial Screen &amp; Compression Safety</h3><span class="h-sub">ABPI before compression</span></div>
+      <div class="panel-b">
+        <div class="callout warn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4M12 17v.01M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg><span>Confirm <b>ABPI</b> before applying compression. ABPI &lt; 0.8 (or &gt; 1.3) needs vascular review — full compression may be unsafe.</span></div>
+        <div class="grid g3 keep" style="margin-top:12px">
+          <div class="field"><label>ABPI</label><input type="number" step="0.01" min="0" placeholder="e.g. 0.95" id="venABPI"></div>
+          <div class="field"><label>Dorsalis pedis pulse</label><select><option value="">Select…</option><option>Palpable</option><option>Diminished</option><option>Absent</option></select></div>
+          <div class="field"><label>Posterior tibial pulse</label><select><option value="">Select…</option><option>Palpable</option><option>Diminished</option><option>Absent</option></select></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">4</span><h3>Venous Skin Changes &amp; Exudate</h3></div>
+      <div class="panel-b">
+        <div class="crit" style="margin-top:2px">
+          <label class="c"><input type="checkbox"><span class="cl"><b>Haemosiderin staining</b></span></label>
+          <label class="c"><input type="checkbox"><span class="cl"><b>Lipodermatosclerosis</b> <span>inverted champagne-bottle leg</span></span></label>
+          <label class="c"><input type="checkbox"><span class="cl"><b>Atrophie blanche</b></span></label>
+          <label class="c"><input type="checkbox"><span class="cl"><b>Varicose eczema</b></span></label>
+          <label class="c"><input type="checkbox"><span class="cl"><b>Ankle flare</b></span></label>
+        </div>
+        <div class="grid g2" style="margin-top:12px">
+          <div class="field"><label>Exudate amount</label><select><option value="">Select…</option><option>None</option><option>Low</option><option>Moderate</option><option>High</option></select></div>
+          <div class="field"><label>Compression in place</label><select><option value="">Select…</option><option>None</option><option>Reduced (ABPI-modified)</option><option>Full multilayer</option><option>Hosiery</option></select></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">5</span><h3>Care &amp; Plan</h3></div>
+      <div class="panel-b">
+        <div class="grid g2">
+          <div class="field"><label>Cleansing</label><input type="text" placeholder="e.g. Normal saline / tap water"></div>
+          <div class="field"><label>Primary dressing</label><input type="text" placeholder="e.g. Foam under compression"></div>
+          <div class="field"><label>Next visit / frequency</label><input type="text" placeholder="e.g. weekly"></div>
+          <div class="field"><label>Physician / vascular notified?</label><select><option>Not required</option><option>Yes — routine update</option><option>Yes — urgent (ABPI / arterial concern)</option></select></div>
+        </div>
+        <div class="field span2" style="margin-top:14px"><label>Clinical notes &amp; plan</label><textarea placeholder="Compression tolerance, oedema trend, leg elevation & exercise advice, escalation…"></textarea></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">6</span><h3>Wound Photography</h3><span class="h-sub">Attach clinical images</span></div>
+      <div class="panel-b">
+        <div class="img-drop" data-imgdrop="ven"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L8 6H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-4l-1.5-2z"/><circle cx="12" cy="13" r="3.5"/></svg><div class="il">Add wound photo(s)</div><div class="is">Tap to capture or upload · stored with this visit</div></div>
+        <input type="file" accept="image/*" capture="environment" multiple hidden data-imgin="ven">
+        <div class="img-grid" data-imggrid="ven"></div>
+      </div>
+    </div>
+    <div class="print-score" data-for="ven"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- ==================== TOOL 5: ARTERIAL ULCER ===================== -->
+  <!-- ================================================================= -->
+  <section class="tool" id="tool-art" data-title="Arterial Ulcer Assessment">
+    <div class="panel">
+      <div class="panel-h"><span class="n">1</span><h3>Arterial Ulcer Context</h3></div>
+      <div class="panel-b">
+        <div class="grid g3 keep">
+          <div class="field"><label>Affected leg</label><select><option value="">Select…</option><option>Right</option><option>Left</option><option>Bilateral</option></select></div>
+          <div class="field"><label>Ulcer location</label><select><option value="">Select…</option><option>Toes / apices</option><option>Dorsum of foot</option><option>Heel</option><option>Lateral malleolus</option><option>Pretibial / shin</option><option>Other</option></select></div>
+          <div class="field"><label>Duration</label><input type="text" placeholder="e.g. 3 weeks"></div>
+          <div class="field"><label>Rest pain</label><select><option value="">Select…</option><option>No</option><option>Yes</option></select></div>
+          <div class="field"><label>Night pain (relieved by dependency)</label><select><option value="">Select…</option><option>No</option><option>Yes</option></select></div>
+          <div class="field"><label>Claudication distance</label><input type="text" placeholder="e.g. <100 m"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">2</span><h3>Perfusion</h3><span class="h-sub">ABI defines severity</span></div>
+      <div class="panel-b">
+        <div class="callout warn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4M12 17v.01M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg><span>Arterial ulcers must <b>not</b> be compressed. ABI &lt; 0.5, rest pain or tissue loss = <b>critical limb ischaemia</b> — urgent vascular referral.</span></div>
+        <div class="grid g3 keep" style="margin-top:12px">
+          <div class="field"><label>Ankle–Brachial Index (ABI)</label><input type="number" step="0.01" min="0" placeholder="e.g. 0.45" id="artABI"></div>
+          <div class="field"><label>Toe pressure (mmHg)</label><input type="number" step="1" min="0" placeholder="optional"></div>
+          <div class="field"><label>Skin temperature</label><select><option value="">Select…</option><option>Warm</option><option>Cool</option><option>Cold</option></select></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">3</span><h3>Pulses &amp; Ischaemic Signs</h3></div>
+      <div class="panel-b">
+        <div class="grid g4 keep">
+          <div class="field"><label>Dorsalis pedis</label><select><option value="">…</option><option>Palpable</option><option>Diminished</option><option>Absent</option></select></div>
+          <div class="field"><label>Posterior tibial</label><select><option value="">…</option><option>Palpable</option><option>Diminished</option><option>Absent</option></select></div>
+          <div class="field"><label>Popliteal</label><select><option value="">…</option><option>Palpable</option><option>Diminished</option><option>Absent</option></select></div>
+          <div class="field"><label>Femoral</label><select><option value="">…</option><option>Palpable</option><option>Diminished</option><option>Absent</option></select></div>
+        </div>
+        <div class="crit" id="artIsch" style="margin-top:12px">
+          <label class="c"><input type="checkbox"><span class="cl"><b>Dependent rubor</b></span></label>
+          <label class="c"><input type="checkbox"><span class="cl"><b>Pallor on elevation</b></span></label>
+          <label class="c"><input type="checkbox"><span class="cl"><b>Cool / cold foot</b></span></label>
+          <label class="c"><input type="checkbox"><span class="cl"><b>Absent hair growth / shiny skin</b></span></label>
+          <label class="c"><input type="checkbox" data-w="gangrene"><span class="cl"><b>Gangrene / necrosis</b> <span>tissue loss</span></span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">4</span><h3>Rutherford Category</h3><span class="h-sub">Chronic limb ischaemia</span></div>
+      <div class="panel-b">
+        <div class="field"><label>Rutherford category</label><select id="rutherford"><option value="">Select…</option><option>0 — Asymptomatic</option><option>1 — Mild claudication</option><option>2 — Moderate claudication</option><option>3 — Severe claudication</option><option>4 — Ischaemic rest pain</option><option>5 — Minor tissue loss</option><option>6 — Major tissue loss</option></select></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">5</span><h3>Care &amp; Plan</h3></div>
+      <div class="panel-b">
+        <div class="grid g2">
+          <div class="field"><label>Cleansing</label><input type="text" placeholder="e.g. Dry, non-adherent (keep dry if dry gangrene)"></div>
+          <div class="field"><label>Primary dressing</label><input type="text" placeholder="e.g. Non-adherent, no compression"></div>
+          <div class="field"><label>Next visit / frequency</label><input type="text" placeholder="e.g. 48–72 h"></div>
+          <div class="field"><label>Vascular notified?</label><select><option>Not required</option><option>Yes — routine referral</option><option>Yes — urgent (critical ischaemia)</option></select></div>
+        </div>
+        <div class="field span2" style="margin-top:14px"><label>Clinical notes &amp; plan</label><textarea placeholder="Perfusion status, smoking cessation, no-compression note, escalation to vascular…"></textarea></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="n">6</span><h3>Wound Photography</h3><span class="h-sub">Attach clinical images</span></div>
+      <div class="panel-b">
+        <div class="img-drop" data-imgdrop="art"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L8 6H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-4l-1.5-2z"/><circle cx="12" cy="13" r="3.5"/></svg><div class="il">Add wound photo(s)</div><div class="is">Tap to capture or upload · stored with this visit</div></div>
+        <input type="file" accept="image/*" capture="environment" multiple hidden data-imgin="art">
+        <div class="img-grid" data-imggrid="art"></div>
+      </div>
+    </div>
+    <div class="print-score" data-for="art"></div>
+  </section>
+
+  <!-- ================================================================= -->
   <!-- ==================== TAB 4: PATIENT LOG ========================== -->
   <!-- ================================================================= -->
   <section class="tool" id="tool-log" data-title="Patient Log">
@@ -1102,8 +1270,9 @@
 /* ---------------- Tabs ---------------- */
 const tabs=document.querySelectorAll('.tab');
 const tools={surg:document.getElementById('tool-surg'),dfu:document.getElementById('tool-dfu'),
-             pi:document.getElementById('tool-pi'),log:document.getElementById('tool-log')};
-const assessTools=['surg','dfu','pi'];
+             pi:document.getElementById('tool-pi'),ven:document.getElementById('tool-ven'),
+             art:document.getElementById('tool-art'),log:document.getElementById('tool-log')};
+const assessTools=['surg','dfu','pi','ven','art'];
 let active='surg';
 const patientPanel=document.getElementById('patientPanel');
 const dock=document.querySelector('.dock');
@@ -1170,6 +1339,8 @@ function recalc(){
   if(active==='surg')scoreSurg();
   else if(active==='dfu')scoreDFU();
   else if(active==='pi')scorePI();
+  else if(active==='ven')scoreVenous();
+  else if(active==='art')scoreArterial();
   else return;
   syncPrintScore();
   updateHealing();
@@ -1261,6 +1432,51 @@ function scoreSurg(){
   dockInterp.textContent=note;
 }
 
+/* Venous: CEAP class + ABPI compression safety */
+function abpiBand(v){
+  if(v==null)return null;
+  if(v>1.3)return{v:'Non-compressible (>1.3)',c:'var(--mod)',msg:'Calcified vessels — ABPI unreliable; vascular review before compression.'};
+  if(v>=0.8)return{v:'Compression suitable',c:'var(--ok)',msg:'ABPI ≥0.8 — full compression generally safe if tolerated.'};
+  if(v>=0.5)return{v:'Reduced — modified compression',c:'var(--mild)',msg:'ABPI 0.5–0.79 — mixed disease; reduced compression only under specialist guidance.'};
+  return{v:'Do NOT compress',c:'var(--high)',msg:'ABPI <0.5 — significant arterial disease; withhold compression, urgent vascular referral.'};
+}
+function scoreVenous(){
+  dockLabel.textContent='CEAP class';
+  const ceap=document.querySelector('#ceapClass input:checked');
+  const abpiRaw=parseFloat((document.getElementById('venABPI')||{}).value);
+  const abpi=isFinite(abpiRaw)?abpiRaw:null;
+  const band=abpiBand(abpi);
+  if(!ceap&&abpi==null){dockNum.innerHTML='–';dockValue.innerHTML='Complete the assessment';setChip('');dockInterp.textContent='';return;}
+  dockNum.innerHTML=ceap?`<span class="mono" style="font-size:24px">${ceap.value}</span>`:'–';
+  const cd=ceap?({C0:'No venous disease',C1:'Telangiectasia',C2:'Varicose veins',C3:'Oedema',C4:'Skin changes',C5:'Healed ulcer',C6:'Active ulcer'})[ceap.value]:'';
+  dockValue.innerHTML=`${cd}${ceap&&band?' · ':''}${band?band.v:''}<span class="riskchip" id="dockChip"></span>`;
+  if(band)setChipInline(abpi!=null?'ABPI '+abpi:'',band.c); else setChip('');
+  dockInterp.textContent=band?band.msg:'Record ABPI before planning compression.';
+}
+/* Arterial: ABI severity + critical limb ischaemia */
+function abiBand(v){
+  if(v==null)return null;
+  if(v>1.3)return{v:'Non-compressible (>1.3)',c:'var(--mod)',cli:false,msg:'Calcified vessels — ABI unreliable; use toe pressures.'};
+  if(v>=0.9)return{v:'Normal',c:'var(--ok)',cli:false,msg:'ABI ≥0.9 — arterial ulcer less likely; reassess aetiology.'};
+  if(v>=0.7)return{v:'Mild PAD',c:'var(--mild)',cli:false,msg:'ABI 0.7–0.89 — mild peripheral arterial disease.'};
+  if(v>=0.5)return{v:'Moderate PAD',c:'var(--mod)',cli:false,msg:'ABI 0.5–0.69 — moderate PAD; vascular referral.'};
+  if(v>=0.4)return{v:'Severe PAD',c:'var(--high)',cli:true,msg:'ABI 0.4–0.49 — severe PAD; prompt vascular referral.'};
+  return{v:'Critical limb ischaemia',c:'var(--severe)',cli:true,msg:'ABI <0.4 — critical limb ischaemia; urgent vascular referral.'};
+}
+function scoreArterial(){
+  dockLabel.textContent='Ankle–Brachial Index';
+  const abiRaw=parseFloat((document.getElementById('artABI')||{}).value);
+  const abi=isFinite(abiRaw)?abiRaw:null;
+  const band=abiBand(abi);
+  const gangrene=!!document.querySelector('#artIsch input[data-w="gangrene"]:checked');
+  if(abi==null&&!gangrene){dockNum.innerHTML='–';dockValue.innerHTML='Enter ABI to grade perfusion';setChip('');dockInterp.textContent='';return;}
+  dockNum.innerHTML=abi!=null?`<span class="mono" style="font-size:24px">${abi}</span>`:'–';
+  const cli=(band&&band.cli)||gangrene;
+  dockValue.innerHTML=`${band?band.v:'Tissue loss'}${cli?' · <b style="color:var(--high)">CLI</b>':''}<span class="riskchip" id="dockChip"></span>`;
+  setChipInline(cli?'Urgent':(band?band.v.split(' ')[0]:''),cli?'var(--severe)':(band?band.c:'var(--muted)'));
+  dockInterp.textContent=(band?band.msg:'')+(gangrene?' Tissue loss present — do not compress; urgent referral.':'');
+}
+
 /* chip helper (re-query because innerHTML rewrites it) */
 function setChipInline(text,color){
   const chip=dockValue.querySelector('#dockChip');
@@ -1348,7 +1564,7 @@ document.querySelectorAll('[data-addlist]').forEach(btn=>{
 });
 
 /* ---- wound images (per assessment tool) ---- */
-const toolImages={surg:[],dfu:[],pi:[]};
+const toolImages={surg:[],dfu:[],pi:[],ven:[],art:[]};
 function downscale(dataURL,max,q,cb){
   const img=new Image();
   img.onload=()=>{let w=img.width,h=img.height;
@@ -1568,8 +1784,8 @@ function exportCSV(){
   toast('CSV exported ('+(rows.length-1)+' visits)');
 }
 function visitHTML(v){
-  const cls={surg:'vt-surg',dfu:'vt-dfu',pi:'vt-pi'}[v.tool]||'';
-  const tlabel={surg:'SURG',dfu:'DFU',pi:'PI'}[v.tool]||(v.tool||'').toUpperCase();
+  const cls={surg:'vt-surg',dfu:'vt-dfu',pi:'vt-pi',ven:'vt-ven',art:'vt-art'}[v.tool]||'';
+  const tlabel={surg:'SURG',dfu:'DFU',pi:'PI',ven:'VEN',art:'ART'}[v.tool]||(v.tool||'').toUpperCase();
   let body='';
   (v.sections||[]).forEach(sec=>{if(!sec.items||!sec.items.length)return;
     body+=`<div class="vsec">${esc(sec.title)}</div>`;
@@ -1861,6 +2077,19 @@ function evaluateAlerts(h){
     if(bd===6&&bt<=12)add('warn',`<b>Braden ${bt}/23 — very high risk:</b> aggressive prevention bundle &amp; frequent review.`);
     const stage=document.querySelector('#piStage input:checked');
     if(stage&&stage.value==='Stage 4')add('warn',`<b>Stage 4 pressure injury:</b> full-thickness tissue loss — ensure specialist involvement.`);
+  }else if(active==='ven'){
+    const abpi=parseFloat((document.getElementById('venABPI')||{}).value);
+    if(isFinite(abpi)){
+      if(abpi<0.5)add('crit',`<b>ABPI ${abpi} — do not compress:</b> significant arterial disease; urgent vascular referral.`);
+      else if(abpi<0.8)add('warn',`<b>ABPI ${abpi} — compression caution:</b> mixed disease; vascular review before full compression.`);
+      else if(abpi>1.3)add('warn',`<b>ABPI ${abpi} — non-compressible vessels:</b> unreliable; confirm perfusion before compression.`);
+    }
+  }else if(active==='art'){
+    const abi=parseFloat((document.getElementById('artABI')||{}).value);
+    const gangrene=!!document.querySelector('#artIsch input[data-w="gangrene"]:checked');
+    if(isFinite(abi)&&abi<0.4)add('crit',`<b>ABI ${abi} — critical limb ischaemia:</b> urgent vascular referral; do not compress.`);
+    else if(isFinite(abi)&&abi<0.5)add('warn',`<b>ABI ${abi} — severe PAD:</b> prompt vascular referral.`);
+    if(gangrene)add('crit',`<b>Gangrene / tissue loss:</b> urgent vascular / surgical review.`);
   }
   return A;
 }
