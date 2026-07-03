@@ -284,6 +284,27 @@
   .pt-card .pc-meta .mrn{font-family:'IBM Plex Mono';color:var(--teal);font-weight:600}
   .status-chip{font-size:10px;font-weight:700;font-family:'Plus Jakarta Sans';padding:2px 9px;border-radius:20px;color:#fff;white-space:nowrap}
   .s-crit{background:var(--high)}.s-warn{background:var(--mod)}.s-good{background:var(--ok)}.s-info{background:var(--muted)}
+
+  /* ---------- secure access gate + cloud status ---------- */
+  .lock{position:fixed;inset:0;z-index:100;background:linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 60%,#134B5E 100%);
+    display:none;place-items:center;padding:20px}
+  .lock.show{display:grid}
+  .lock-card{background:#fff;border-radius:18px;max-width:380px;width:100%;padding:30px 28px;text-align:center;box-shadow:var(--shadow-lg)}
+  .lock-card .mark{width:52px;height:52px;border-radius:14px;background:linear-gradient(150deg,var(--teal-2),var(--teal));
+    display:grid;place-items:center;margin:0 auto 16px;box-shadow:0 4px 14px rgba(13,148,136,.4)}
+  .lock-card .mark svg{width:30px;height:30px}
+  .lock-card h2{font-size:19px;font-weight:800;color:var(--navy)}
+  .lock-card p{font-size:13px;color:var(--muted);margin:8px 0 18px;line-height:1.5}
+  .lock-card input{width:100%;text-align:center;font-size:16px;letter-spacing:.04em;padding:12px;margin-bottom:10px}
+  .lock-card .btn{width:100%;justify-content:center;padding:13px}
+  .lock-err{color:var(--high);font-size:12.5px;min-height:16px;margin-bottom:8px;font-weight:600}
+  .lock-foot{font-size:11px;color:var(--muted-2);margin-top:16px}
+  .cloud-chip{font-size:11px;font-weight:700;font-family:'Plus Jakarta Sans';padding:3px 10px;border-radius:20px;
+    background:var(--ok-bg);color:var(--ok);display:inline-flex;gap:5px;align-items:center;white-space:nowrap}
+  .cloud-chip.off{background:var(--canvas);color:var(--muted)}
+  .cloud-chip .cd{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .cloud-signout{font-size:11.5px;color:var(--muted);cursor:pointer;text-decoration:underline;margin-left:10px}
+  .cloud-signout:hover{color:var(--high)}
   .pt-card .pc-visits{flex:none;text-align:right}
   .pt-card .pc-visits b{font-family:'IBM Plex Mono';font-size:18px;color:var(--navy);display:block;line-height:1}
   .pt-card .pc-visits span{font-size:10px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.04em}
@@ -900,6 +921,7 @@
         </div>
         <div class="log-toolbar">
           <span class="hint">Tap a patient to open their full record.</span>
+          <span id="cloudStatus"></span>
           <span class="log-count" id="logCount"></span>
         </div>
       </div>
@@ -944,6 +966,32 @@
 
 <div class="toast" id="toast"></div>
 <div class="alert-banner" id="alertBanner"></div>
+
+<!-- ===== Secure access gate (only shown when cloud sync is enabled) ===== -->
+<div class="lock" id="lockScreen">
+  <div class="lock-card">
+    <div class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.35-9.5-9C1 9 2.5 5 6 5c2 0 3.2 1.2 4 2.5C10.8 6.2 12 5 14 5c1.2 0 2.2.4 3 1.1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 12.5h2l1.5-3 2 6 1.5-3h1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <h2 class="jakarta">CuraNova — Secure Access</h2>
+    <p>Enter the access code your administrator shared with you to open the shared patient log.</p>
+    <input id="lockCode" type="password" placeholder="Access code" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitLock()">
+    <div class="lock-err" id="lockErr"></div>
+    <button class="btn btn-primary" id="lockBtn" onclick="submitLock()">Unlock</button>
+    <div class="lock-foot">🔒 Patient records are shared securely across your team.</div>
+  </div>
+</div>
+
+<!-- ============================================================= -->
+<!-- CuraNova cloud config — paste your Supabase keys here to turn  -->
+<!-- on shared, cross-device sync. Leave blank to stay browser-only.-->
+<!-- ============================================================= -->
+<script>
+  window.CURANOVA_CLOUD = {
+    url:     '',   // Supabase Project URL, e.g. https://abcd.supabase.co
+    anonKey: '',   // Supabase anon (public) API key
+    email:   'team@curanova.app'   // the shared login email you create in Supabase
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
 /* ---------------- Tabs ---------------- */
@@ -1175,7 +1223,7 @@ function addToList(k,val){
   const stored=loadJSON('curanova_lists',{});
   const existing=new Set([...(LIST_DEFAULTS[k]||[]),...(stored[k]||[])].map(x=>x.toLowerCase()));
   if(existing.has(val.toLowerCase()))return false;
-  stored[k]=[...(stored[k]||[]),val];saveJSON('curanova_lists',stored);renderDatalists();return true;
+  stored[k]=[...(stored[k]||[]),val];saveJSON('curanova_lists',stored);renderDatalists();cloudSaveLists();return true;
 }
 function renderDatalists(){
   const lists=getLists();
@@ -1325,6 +1373,7 @@ function saveToLog(){
   p.visits.push(visit);
   patients[pv.mrn]=p;
   if(saveJSON('curanova_patients',patients)){
+    cloudUpsertPatient(p);
     toolImages[active]=[];renderImgGrid(active);
     const crit=alerts.filter(a=>a.sev==='crit');
     toast(isNew?`New record created — ${p.name}`:`Visit ${p.visits.length} added — ${p.name}`);
@@ -1354,6 +1403,7 @@ function renderLog(){
   if(!arr.length)list.innerHTML=emptyState('No records yet','Complete an assessment and tap “Save to Log”.');
   else if(!filtered.length)list.innerHTML=emptyState('No matches','Try a different MRN, name, or date of birth.');
   else list.innerHTML=filtered.map(patientCard).join('');
+  updateCloudBadge();
 }
 function visitHTML(v){
   const cls={surg:'vt-surg',dfu:'vt-dfu',pi:'vt-pi'}[v.tool]||'';
@@ -1415,10 +1465,12 @@ function deleteVisit(vid){
   if(!confirm('Delete this visit from the patient record? This cannot be undone.'))return;
   const patients=getPatients();const p=patients[openMrn];if(!p)return;
   p.visits=p.visits.filter(v=>v.id!==vid);
-  if(!p.visits.length)delete patients[openMrn];
+  const mrn=openMrn;
+  if(!p.visits.length)delete patients[mrn];
   saveJSON('curanova_patients',patients);
+  if(patients[mrn])cloudUpsertPatient(patients[mrn]);else cloudDeletePatient(mrn);
   toast('Visit deleted');
-  if(patients[openMrn])openPatient(openMrn);else closePatient();
+  if(patients[mrn])openPatient(mrn);else closePatient();
 }
 document.addEventListener('click',e=>{const card=e.target.closest('.pt-card');if(card)openPatient(card.dataset.mrn);});
 document.getElementById('logSearch').addEventListener('input',()=>{if(openMrn)closePatient();else renderLog();});
@@ -1664,10 +1716,84 @@ function trajectoryHTML(p){
   }).join('');
 }
 
+/* =================================================================
+   SHARED CLOUD SYNC (Supabase) — optional, enabled via CURANOVA_CLOUD
+   Data is protected by a single shared login (the "access code").
+   Falls back to browser-only storage when not configured/offline.
+   ================================================================= */
+const CLOUD = window.CURANOVA_CLOUD || {url:'',anonKey:'',email:''};
+const cloudEnabled = !!(CLOUD.url && CLOUD.anonKey);
+let sb=null, cloudReady=false;
+
+async function cloudInit(){
+  if(!cloudEnabled) return;                       // stay fully local
+  if(!window.supabase){ toast('Cloud library unavailable — working offline',true); return; }
+  try{
+    sb = window.supabase.createClient(CLOUD.url, CLOUD.anonKey, {auth:{persistSession:true}});
+    const {data:{session}} = await sb.auth.getSession();
+    if(session) await onAuthed(); else showLock();
+  }catch(e){ console.warn('cloudInit',e); showLock(); }
+}
+async function onAuthed(){
+  cloudReady=true; hideLock();
+  await cloudPull();
+  renderDatalists();
+  if(active==='log') renderLog(); else recalc();
+  updateCloudBadge();
+  subscribeRealtime();
+}
+async function cloudPull(){
+  try{
+    const {data:pts,error} = await sb.from('patients').select('mrn,data');
+    if(error) throw error;
+    const obj={}; (pts||[]).forEach(r=>{ if(r.data) obj[r.mrn]=r.data; });
+    localStorage.setItem('curanova_patients', JSON.stringify(obj));
+    const {data:lst} = await sb.from('app_lists').select('data').eq('id',1).maybeSingle();
+    if(lst&&lst.data) localStorage.setItem('curanova_lists', JSON.stringify(lst.data));
+  }catch(e){ console.warn('cloudPull',e); toast('Could not reach shared records — showing local copy',true); }
+}
+async function cloudUpsertPatient(p){
+  if(!cloudReady) return;
+  try{
+    const {error}=await sb.from('patients').upsert({mrn:p.mrn,name:p.name||'',dob:p.dob||'',data:p,updated_at:new Date().toISOString()});
+    if(error) throw error;
+  }catch(e){ console.warn('upsert',e); toast('Saved on this device — not yet synced (offline?)',true); }
+}
+async function cloudDeletePatient(mrn){ if(!cloudReady)return; try{await sb.from('patients').delete().eq('mrn',mrn);}catch(e){console.warn('delete',e);} }
+async function cloudSaveLists(){ if(!cloudReady)return; try{await sb.from('app_lists').upsert({id:1,data:loadJSON('curanova_lists',{})});}catch(e){console.warn('lists',e);} }
+function subscribeRealtime(){
+  try{
+    sb.channel('curanova-patients').on('postgres_changes',{event:'*',schema:'public',table:'patients'},()=>{
+      cloudPull().then(()=>{ if(active==='log' && !openMrn) renderLog(); });
+    }).subscribe();
+  }catch(e){ console.warn('realtime',e); }
+}
+function updateCloudBadge(){
+  const el=document.getElementById('cloudStatus'); if(!el)return;
+  if(cloudReady) el.innerHTML=`<span class="cloud-chip"><span class="cd"></span>Shared · synced</span><span class="cloud-signout" onclick="cloudSignOut()">Sign out</span>`;
+  else if(cloudEnabled) el.innerHTML=`<span class="cloud-chip off"><span class="cd"></span>Offline — local copy</span>`;
+  else el.innerHTML='';
+}
+function showLock(){ document.getElementById('lockScreen').classList.add('show'); document.getElementById('lockCode').focus(); }
+function hideLock(){ document.getElementById('lockScreen').classList.remove('show'); }
+async function submitLock(){
+  const inp=document.getElementById('lockCode'), btn=document.getElementById('lockBtn'), err=document.getElementById('lockErr');
+  const code=(inp.value||'').trim(); if(!code){inp.focus();return;}
+  btn.disabled=true; btn.textContent='Checking…'; err.textContent='';
+  try{
+    const {error}=await sb.auth.signInWithPassword({email:CLOUD.email,password:code});
+    if(error){ err.textContent='Incorrect access code. Please try again.'; inp.select(); }
+    else await onAuthed();
+  }catch(e){ err.textContent='Could not connect. Check your network and try again.'; }
+  btn.disabled=false; btn.textContent='Unlock';
+}
+async function cloudSignOut(){ try{ if(sb) await sb.auth.signOut(); }catch(e){} location.reload(); }
+
 /* ---- init ---- */
 buildBWAT();
 placeShared('surg');
 renderDatalists();
+cloudInit();
 
 /* ---------------- Wire up ---------------- */
 document.addEventListener('change',recalc);
