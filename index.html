@@ -305,6 +305,24 @@
   .cloud-chip .cd{width:7px;height:7px;border-radius:50%;background:currentColor}
   .cloud-signout{font-size:11.5px;color:var(--muted);cursor:pointer;text-decoration:underline;margin-left:10px}
   .cloud-signout:hover{color:var(--high)}
+
+  /* ---------- caseload dashboard + filters ---------- */
+  .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+  .dtile{border:1px solid var(--border-2);border-radius:12px;padding:12px 14px;background:var(--canvas-2);cursor:pointer;transition:.14s}
+  .dtile:hover{border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,148,136,.07)}
+  .dtile .dn{font-family:'IBM Plex Mono';font-weight:600;font-size:26px;line-height:1;color:var(--navy)}
+  .dtile .dl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);margin-top:5px}
+  .dtile.t-crit .dn{color:var(--high)}.dtile.t-warn .dn{color:var(--mod)}.dtile.t-good .dn{color:var(--ok)}.dtile.t-due .dn{color:var(--mild)}
+  .dash-metrics{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px dashed var(--border-2)}
+  .dash-metrics .dm{font-size:12.5px;color:var(--muted)}
+  .dash-metrics .dm b{font-family:'IBM Plex Mono';color:var(--navy);font-size:15px}
+  .chipbtn{appearance:none;border:1.5px solid var(--border);background:#fff;color:var(--navy-2);font-family:'Plus Jakarta Sans';
+    font-weight:600;font-size:12px;padding:6px 12px;border-radius:20px;cursor:pointer;transition:.13s}
+  .chipbtn:hover{border-color:var(--teal);color:var(--teal)}
+  .chipbtn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .chipbtn.ghost{border-style:dashed;color:var(--muted)}
+  .pt-card .due-chip{font-size:10px;font-weight:700;font-family:'Plus Jakarta Sans';padding:2px 8px;border-radius:20px;background:#FBEED2;color:#8A5A12}
+  .pt-card .due-chip.over{background:#FDE0DB;color:#8A2B22}
   .pt-card .pc-visits{flex:none;text-align:right}
   .pt-card .pc-visits b{font-family:'IBM Plex Mono';font-size:18px;color:var(--navy);display:block;line-height:1}
   .pt-card .pc-visits span{font-size:10px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.04em}
@@ -477,7 +495,8 @@
         <div class="field span2"><label>Patient name</label><input type="text" placeholder="Full name"></div>
         <div class="field"><label>File / MRN</label><input type="text" placeholder="ID"></div>
         <div class="field"><label>Date of birth</label><input type="date"></div>
-        <div class="field"><label>Assessment date <span class="tag">req</span></label><input type="date"></div>
+        <div class="field"><label>Assessment date <span class="tag">req</span></label><input type="date" data-req></div>
+        <div class="field"><label>Next visit date</label><input type="date" data-nextvisit></div>
         <div class="field"><label>Visit #</label><input type="number" min="1" placeholder="e.g. 1"></div>
         <div class="field"><label>Attending nurse</label>
           <div class="list-input"><input type="text" list="dl-nurses" data-remember="nurses" placeholder="Name"><button type="button" class="addbtn" data-addlist="nurses" title="Save this name to the list">＋</button></div></div>
@@ -911,16 +930,25 @@
       <div><h2 class="jakarta">CuraNova — Patient Wound Record</h2><p>Home Nursing · Advanced Wound Care</p></div>
     </div>
 
+    <!-- Caseload dashboard -->
+    <div class="panel no-print-log" id="dashPanel">
+      <div class="panel-h"><span class="n">▤</span><h3>Caseload Dashboard</h3><span class="h-sub" id="dashSub"></span></div>
+      <div class="panel-b"><div id="caseDash"></div></div>
+    </div>
+
     <div class="panel no-print-log">
       <div class="panel-h"><span class="n">⌕</span><h3>Patient Log</h3><span class="h-sub">Assessments save here automatically by MRN</span></div>
       <div class="panel-b">
-        <div class="callout info"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg><span>Each patient is keyed by <b>MRN</b>. Saving an assessment whose MRN already exists <b>appends the visit to that patient's record</b> — it never creates a duplicate. Records are stored securely in this browser only.</span></div>
-        <div class="search-wrap" style="margin-top:14px">
+        <div class="search-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <input type="text" id="logSearch" placeholder="Search by MRN, patient name, or date of birth…">
         </div>
         <div class="log-toolbar">
-          <span class="hint">Tap a patient to open their full record.</span>
+          <button class="chipbtn" data-f="" onclick="setLogFilter('')">All</button>
+          <button class="chipbtn" data-f="crit" onclick="setLogFilter('crit')">Escalate</button>
+          <button class="chipbtn" data-f="warn" onclick="setLogFilter('warn')">Watch</button>
+          <button class="chipbtn" data-f="due" onclick="setLogFilter('due')">Due / overdue</button>
+          <button class="chipbtn ghost" onclick="exportCSV()" title="Download all records as CSV">⭳ Export CSV</button>
           <span id="cloudStatus"></span>
           <span class="log-count" id="logCount"></span>
         </div>
@@ -1324,7 +1352,7 @@ function captureTool(toolKey){
 
 /* ---- read shared Patient & Visit panel ---- */
 function patientFieldValues(){
-  const map={'Patient name':'name','File / MRN':'mrn','Date of birth':'dob','Assessment date':'date','Visit #':'visitNo','Attending nurse':'nurse','Referring physician':'physician','Specialty':'specialty'};
+  const map={'Patient name':'name','File / MRN':'mrn','Date of birth':'dob','Assessment date':'date','Next visit date':'nextVisit','Visit #':'visitNo','Attending nurse':'nurse','Referring physician':'physician','Specialty':'specialty'};
   const out={};
   patientPanel.querySelectorAll('.field').forEach(f=>{
     const lab=f.querySelector('label'),ctrl=f.querySelector('input,select,textarea');
@@ -1339,10 +1367,9 @@ function getPatients(){return loadJSON('curanova_patients',{});}
 function saveToLog(){
   if(!assessTools.includes(active))return;
   const pv=patientFieldValues();
-  if(!pv.mrn){toast('Enter an MRN to save this assessment',true);
-    const mrnInput=[...patientPanel.querySelectorAll('.field')].find(f=>labelText(f.querySelector('label'))==='File / MRN');
-    if(mrnInput){mrnInput.querySelector('input').focus();mrnInput.scrollIntoView({behavior:'smooth',block:'center'});}
-    return;}
+  const focusField=(label)=>{const f=[...patientPanel.querySelectorAll('.field')].find(x=>labelText(x.querySelector('label'))===label);if(f){f.querySelector('input,select').focus();f.scrollIntoView({behavior:'smooth',block:'center'});}};
+  if(!pv.mrn){toast('Enter an MRN to save this assessment',true);focusField('File / MRN');return;}
+  if(!pv.date){toast('Enter the assessment date to save',true);focusField('Assessment date');return;}
   rememberFields();
   const patients=getPatients();
   const isNew=!patients[pv.mrn];
@@ -1361,7 +1388,7 @@ function saveToLog(){
   const visit={
     id:'v'+Date.now(),savedAt:new Date().toISOString(),
     tool:active,toolTitle:tools[active].dataset.title,woundLabel:woundLabelVal(),
-    date:pv.date||'',visitNo:pv.visitNo||'',nurse:pv.nurse||'',physician:pv.physician||'',specialty:pv.specialty||'',
+    date:pv.date||'',nextVisit:pv.nextVisit||'',visitNo:pv.visitNo||'',nurse:pv.nurse||'',physician:pv.physician||'',specialty:pv.specialty||'',
     score:cap.score,sections:cap.sections,images:toolImages[active].slice(),alerts
   };
   if(h.area!=null)visit.area=h.area;
@@ -1391,19 +1418,74 @@ function patientCard(p){
   const n=p.visits.length,last=lastVisit(p),st=overallStatus(p);
   return `<div class="pt-card" data-mrn="${escAttr(p.mrn)}"><div class="av">${esc(initials(p.name))}</div>
     <div class="pc-main"><div class="pc-name">${esc(p.name||'(unnamed)')}</div>
-      <div class="pc-meta">${st?`<span class="status-chip s-${st.tone}">${esc(st.chip)}</span>`:''}<span class="mrn">MRN ${esc(p.mrn)}</span>${p.dob?`<span>DOB ${esc(p.dob)}</span>`:''}${last?`<span>Last: ${esc(last.date||fmtDate(last.savedAt))}</span>`:''}</div></div>
+      <div class="pc-meta">${st?`<span class="status-chip s-${st.tone}">${esc(st.chip)}</span>`:''}${(()=>{const d=dueStatus(p);return d?`<span class="due-chip ${d==='over'?'over':''}">${d==='over'?'Overdue':'Due today'}</span>`:'';})()}<span class="mrn">MRN ${esc(p.mrn)}</span>${p.dob?`<span>DOB ${esc(p.dob)}</span>`:''}${last?`<span>Last: ${esc(last.date||fmtDate(last.savedAt))}</span>`:''}</div></div>
     <div class="pc-visits"><b>${n}</b><span>visit${n!==1?'s':''}</span></div></div>`;
+}
+let logFilter='';
+function setLogFilter(f){ logFilter=(logFilter===f)?'':f; renderLog(); }
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function nextVisitOf(p){for(let i=p.visits.length-1;i>=0;i--){if(p.visits[i].nextVisit)return p.visits[i].nextVisit;}return '';}
+function dueStatus(p){const nv=nextVisitOf(p);if(!nv)return '';const t=todayStr();if(nv<t)return 'over';if(nv===t)return 'due';return '';}
+function matchesFilter(p){
+  if(!logFilter)return true;
+  if(logFilter==='due'){const d=dueStatus(p);return d==='due'||d==='over';}
+  const st=overallStatus(p); return !!st && st.tone===logFilter;
+}
+function renderDashboard(arr){
+  const sub=document.getElementById('dashSub'), dash=document.getElementById('caseDash');
+  if(!arr.length){ dash.innerHTML='<div class="hint">No patients yet — saved assessments will summarise here.</div>'; sub.textContent=''; return; }
+  let crit=0,warn=0,good=0,due=0,over=0,wounds=0,healed=0;
+  arr.forEach(p=>{
+    const st=overallStatus(p); if(st){ if(st.tone==='crit')crit++; else if(st.tone==='warn')warn++; else if(st.tone==='good')good++; }
+    const d=dueStatus(p); if(d==='over')over++; else if(d==='due')due++;
+    const g=groupWounds(p); wounds+=Object.keys(g).length;
+    Object.values(g).forEach(vs=>{ if(assessWound(vs).chip==='Healed')healed++; });
+  });
+  sub.textContent=`${arr.length} patient${arr.length!==1?'s':''} · ${wounds} wound${wounds!==1?'s':''}`;
+  dash.innerHTML=`<div class="dash-grid">
+    <div class="dtile t-crit" onclick="setLogFilter('crit')"><div class="dn">${crit}</div><div class="dl">Escalate</div></div>
+    <div class="dtile t-warn" onclick="setLogFilter('warn')"><div class="dn">${warn}</div><div class="dl">Watch</div></div>
+    <div class="dtile t-good" onclick="setLogFilter('good')"><div class="dn">${good}</div><div class="dl">Healing</div></div>
+    <div class="dtile t-due" onclick="setLogFilter('due')"><div class="dn">${due+over}</div><div class="dl">Due / overdue</div></div>
+  </div>
+  <div class="dash-metrics">
+    <span class="dm"><b>${wounds}</b> wounds tracked</span>
+    <span class="dm"><b>${healed}</b> healed</span>
+    <span class="dm"><b>${over}</b> overdue visit${over!==1?'s':''}</span>
+  </div>`;
 }
 function renderLog(){
   const q=(document.getElementById('logSearch').value||'').toLowerCase().trim();
   const arr=Object.values(getPatients()).sort((a,b)=>lastTime(b)-lastTime(a));
-  const filtered=arr.filter(p=>!q||(p.mrn||'').toLowerCase().includes(q)||(p.name||'').toLowerCase().includes(q)||(p.dob||'').toLowerCase().includes(q));
-  document.getElementById('logCount').textContent=arr.length?`${arr.length} patient${arr.length!==1?'s':''}`+(q?` · ${filtered.length} match`:''):'';
+  renderDashboard(arr);
+  document.querySelectorAll('#tool-log .chipbtn[data-f]').forEach(b=>b.classList.toggle('active',b.dataset.f===logFilter));
+  const filtered=arr.filter(p=>matchesFilter(p) && (!q||(p.mrn||'').toLowerCase().includes(q)||(p.name||'').toLowerCase().includes(q)||(p.dob||'').toLowerCase().includes(q)));
+  document.getElementById('logCount').textContent=arr.length?`${filtered.length} of ${arr.length} shown`:'';
   const list=document.getElementById('logList');
   if(!arr.length)list.innerHTML=emptyState('No records yet','Complete an assessment and tap “Save to Log”.');
-  else if(!filtered.length)list.innerHTML=emptyState('No matches','Try a different MRN, name, or date of birth.');
+  else if(!filtered.length)list.innerHTML=emptyState('No matches','Adjust the filter or search.');
   else list.innerHTML=filtered.map(patientCard).join('');
   updateCloudBadge();
+}
+/* CSV export of every visit */
+function exportCSV(){
+  const rows=[['MRN','Patient','DOB','Wound','Visit date','Tool','Area cm2','BWAT','% from baseline','Status','Nurse','Physician','Next visit','Alerts']];
+  Object.values(getPatients()).forEach(p=>{
+    Object.entries(groupWounds(p)).forEach(([wound,vs])=>{
+      [...vs].sort((a,b)=>new Date(a.savedAt)-new Date(b.savedAt)).forEach(v=>{
+        rows.push([p.mrn,p.name||'',p.dob||'',wound,v.date||fmtDate(v.savedAt),v.toolTitle||v.tool||'',
+          v.area!=null?v.area:'',v.bwat!=null?v.bwat:'',v.reductionPct!=null?v.reductionPct+'%':'',
+          assessWound([v]).chip,v.nurse||'',v.physician||'',v.nextVisit||'',(v.alerts||[]).map(a=>a.sev.toUpperCase()+': '+a.text).join(' | ')]);
+      });
+    });
+  });
+  if(rows.length<2){toast('No records to export',true);return;}
+  const csv=rows.map(r=>r.map(c=>{const s=String(c==null?'':c);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}).join(',')).join('\r\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='curanova-wound-log-'+todayStr()+'.csv';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast('CSV exported ('+(rows.length-1)+' visits)');
 }
 function visitHTML(v){
   const cls={surg:'vt-surg',dfu:'vt-dfu',pi:'vt-pi'}[v.tool]||'';
