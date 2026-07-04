@@ -47,9 +47,10 @@
     background:radial-gradient(circle,rgba(20,184,166,.28),transparent 65%);pointer-events:none}
   .top-inner{max-width:960px;margin:0 auto;padding:0 16px}
   .brand{display:flex;align-items:center;gap:13px;position:relative;z-index:2}
-  .mark{width:42px;height:42px;border-radius:11px;background:linear-gradient(150deg,var(--teal-2),var(--teal));
-    display:grid;place-items:center;flex:none;box-shadow:0 4px 14px rgba(13,148,136,.4)}
+  .mark{width:42px;height:42px;border-radius:11px;background:#fff;overflow:hidden;
+    display:grid;place-items:center;flex:none;box-shadow:0 4px 14px rgba(11,42,67,.20)}
   .mark svg{width:24px;height:24px}
+  .cn-logo{width:100%;height:100%;object-fit:contain;display:block}
   .brand-txt h1{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
   .brand-txt p{font-size:12.5px;color:#9FC7D4;font-weight:500;letter-spacing:.02em}
   .sub{position:relative;z-index:2;margin:16px 0 0;font-size:13px;color:#BBD6DF;max-width:640px;line-height:1.55}
@@ -229,7 +230,7 @@
     .tool:not(.active){display:none}
     .print-head{display:flex;align-items:center;gap:10px;padding:0 0 10px;border-bottom:2px solid var(--navy);
       margin-bottom:12px}
-    .print-head .pm{width:30px;height:30px;border-radius:7px;background:var(--navy);display:grid;place-items:center}
+    .print-head .pm{width:30px;height:30px;border-radius:7px;background:#fff;border:1px solid var(--border);display:grid;place-items:center;overflow:hidden}
     .print-head .pm svg{width:18px;height:18px}
     .print-head h2{font-size:15px}.print-head p{font-size:10px;color:#555}
     .print-head .pr{margin-left:auto;font-size:10px;color:#555;text-align:right}
@@ -316,8 +317,8 @@
     display:none;place-items:center;padding:20px}
   .lock.show{display:grid}
   .lock-card{background:#fff;border-radius:18px;max-width:380px;width:100%;padding:30px 28px;text-align:center;box-shadow:var(--shadow-lg)}
-  .lock-card .mark{width:52px;height:52px;border-radius:14px;background:linear-gradient(150deg,var(--teal-2),var(--teal));
-    display:grid;place-items:center;margin:0 auto 16px;box-shadow:0 4px 14px rgba(13,148,136,.4)}
+  .lock-card .mark{width:56px;height:56px;border-radius:15px;background:#fff;border:1px solid var(--line);overflow:hidden;
+    display:grid;place-items:center;margin:0 auto 16px;box-shadow:0 6px 18px rgba(11,42,67,.12)}
   .lock-card .mark svg{width:30px;height:30px}
   .lock-card h2{font-size:19px;font-weight:800;color:var(--navy)}
   .lock-card p{font-size:13px;color:var(--muted);margin:8px 0 18px;line-height:1.5}
@@ -462,7 +463,7 @@
   }
   .log-print-head{display:none;align-items:center;gap:10px;padding:0 0 10px;border-bottom:2px solid var(--navy);
     margin-bottom:12px}
-  .log-print-head .pm{width:30px;height:30px;border-radius:7px;background:var(--navy);display:grid;place-items:center}
+  .log-print-head .pm{width:30px;height:30px;border-radius:7px;background:#fff;border:1px solid var(--border);display:grid;place-items:center;overflow:hidden}
   .log-print-head .pm svg{width:18px;height:18px}
 
   /* ---------- Measurements strip + BWAT summary ---------- */
@@ -540,7 +541,7 @@
   <div class="top-inner">
     <div class="brand">
       <div class="mark">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.35-9.5-9C1 9 2.5 5 6 5c2 0 3.2 1.2 4 2.5C10.8 6.2 12 5 14 5c1.2 0 2.2.4 3 1.1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 12.5h2l1.5-3 2 6 1.5-3h1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <img src="logo.svg" alt="CuraNova" class="cn-logo">
       </div>
       <div class="brand-txt">
         <h1>CuraNova</h1>
@@ -563,7 +564,7 @@
 
   <!-- shared patient header prints on each -->
   <div class="print-head">
-    <div class="pm"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.35-9.5-9C1 9 2.5 5 6 5c2 0 3.2 1.2 4 2.5C10.8 6.2 12 5 14 5c1.2 0 2.2.4 3 1.1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 12.5h2l1.5-3 2 6 1.5-3h1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="pm"><img src="logo.svg" alt="CuraNova" class="cn-logo"></div>
     <div><h2 class="jakarta" id="printTitle">Wound Assessment</h2><p>CuraNova Home Nursing — Advanced Wound Care</p></div>
     <div class="pr">Assessment date: ___________<br>Clinician: ___________________</div>
   </div>
@@ -1209,7 +1210,7 @@
 
     <!-- printable header for a patient record -->
     <div class="log-print-head">
-      <div class="pm"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.35-9.5-9C1 9 2.5 5 6 5c2 0 3.2 1.2 4 2.5C10.8 6.2 12 5 14 5c1.2 0 2.2.4 3 1.1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 12.5h2l1.5-3 2 6 1.5-3h1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="pm"><img src="logo.svg" alt="CuraNova" class="cn-logo"></div>
       <div><h2 class="jakarta">CuraNova — Patient Wound Record</h2><p>Home Nursing · Advanced Wound Care</p></div>
     </div>
 
@@ -1302,7 +1303,7 @@
 <!-- ===== Secure access gate (only shown when cloud sync is enabled) ===== -->
 <div class="lock" id="lockScreen">
   <div class="lock-card">
-    <div class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.35-9.5-9C1 9 2.5 5 6 5c2 0 3.2 1.2 4 2.5C10.8 6.2 12 5 14 5c1.2 0 2.2.4 3 1.1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 12.5h2l1.5-3 2 6 1.5-3h1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="mark"><img src="logo.svg" alt="CuraNova" class="cn-logo"></div>
     <h2 class="jakarta">CuraNova — Secure Access</h2>
     <p>Enter your access code to open the shared patient log. Partners with their own login can change the email below.</p>
     <input id="lockEmail" type="email" placeholder="Login email" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('lockCode').focus()">
