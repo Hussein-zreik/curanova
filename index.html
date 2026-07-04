@@ -2,8 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CuraNova — Wound Assessment Tool</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0B2A43">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CuraNova">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -317,7 +324,9 @@
   .lock-card input{width:100%;text-align:center;font-size:16px;letter-spacing:.04em;padding:12px;margin-bottom:10px}
   .lock-card .btn{width:100%;justify-content:center;padding:13px}
   .lock-err{color:var(--high);font-size:12.5px;min-height:16px;margin-bottom:8px;font-weight:600}
-  .lock-foot{font-size:11px;color:var(--muted-2);margin-top:16px}
+  .lock-foot{font-size:11px;color:var(--muted-2);margin-top:16px;line-height:1.9}
+  .lock-offline{color:var(--teal);cursor:pointer;font-weight:600;text-decoration:none}
+  .lock-offline:hover{text-decoration:underline}
   .cloud-chip{font-size:11px;font-weight:700;font-family:'Plus Jakarta Sans';padding:3px 10px;border-radius:20px;
     background:var(--ok-bg);color:var(--ok);display:inline-flex;gap:5px;align-items:center;white-space:nowrap}
   .cloud-chip.off{background:var(--canvas);color:var(--muted)}
@@ -1288,7 +1297,7 @@
     <input id="lockCode" type="password" placeholder="Access code / password" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitLock()">
     <div class="lock-err" id="lockErr"></div>
     <button class="btn btn-primary" id="lockBtn" onclick="submitLock()">Unlock</button>
-    <div class="lock-foot">🔒 Patient records are shared securely across your team.</div>
+    <div class="lock-foot">🔒 Patient records are shared securely across your team.<br><a class="lock-offline" onclick="workOffline()">Work offline on this device →</a></div>
   </div>
 </div>
 
@@ -1297,6 +1306,8 @@
 <!-- on shared, cross-device sync. Leave blank to stay browser-only.-->
 <!-- ============================================================= -->
 <script>
+  /* Progressive Web App: install + offline app shell */
+  if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
   window.CURANOVA_CLOUD = {
     url:     'https://ejxjlifhnqkseavoqlwq.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqeGpsaWZobnFrc2Vhdm9xbHdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwODA1NTcsImV4cCI6MjA5ODY1NjU1N30.PpCuoNa3nZW-UitFFLb2f0nq74YGHScrippZksIEDn8',
@@ -1885,6 +1896,7 @@ function deleteVisit(vid){
   if(!confirm('Delete this visit from the patient record? This cannot be undone.'))return;
   const patients=getPatients();const p=patients[openMrn];if(!p)return;
   p.visits=p.visits.filter(v=>v.id!==vid);
+  p.deleted=[...new Set([...(p.deleted||[]),vid])];   // tombstone so merge won't resurrect it
   const mrn=openMrn;
   if(!p.visits.length)delete patients[mrn];
   saveJSON('curanova_patients',patients);
@@ -2250,22 +2262,38 @@ let currentUser='';
 async function onAuthed(){
   cloudReady=true; hideLock();
   try{ const {data:{user}}=await sb.auth.getUser(); currentUser=user?.email||CLOUD.email; }catch(e){ currentUser=CLOUD.email; }
+  await flushQueue();   // push local/offline changes up first, then reconcile
   await cloudPull();
-  await flushQueue();
   renderDatalists();
   if(active==='log') renderLog(); else recalc();
   updateCloudBadge();
   subscribeRealtime();
   audit('login','signed in');
 }
+/* merge two copies of a patient so concurrent offline edits both survive */
+function mergePatient(remote,local){
+  if(!remote) return local; if(!local) return remote;
+  const deleted=new Set([...(remote.deleted||[]),...(local.deleted||[])]);
+  const byId={};
+  [...(remote.visits||[]),...(local.visits||[])].forEach(v=>{ if(!v||!v.id)return;
+    if(!byId[v.id]||new Date(v.savedAt||0)>=new Date(byId[v.id].savedAt||0)) byId[v.id]=v; });
+  const visits=Object.values(byId).filter(v=>!deleted.has(v.id)).sort((a,b)=>new Date(a.savedAt||0)-new Date(b.savedAt||0));
+  return {...remote,...local, visits, deleted:[...deleted]};
+}
 async function cloudPull(){
   try{
     const {data:pts,error} = await sb.from('patients').select('mrn,data');
     if(error) throw error;
-    const obj={}; (pts||[]).forEach(r=>{ if(r.data) obj[r.mrn]=r.data; });
-    localStorage.setItem('curanova_patients', JSON.stringify(obj));
+    const remote={}; (pts||[]).forEach(r=>{ if(r.data) remote[r.mrn]=r.data; });
+    const local=getPatients(); const out={...local};   // keep local-only (unsynced) patients
+    Object.keys(remote).forEach(mrn=>{ out[mrn]=mergePatient(remote[mrn], local[mrn]); });
+    localStorage.setItem('curanova_patients', JSON.stringify(out));
     const {data:lst} = await sb.from('app_lists').select('data').eq('id',1).maybeSingle();
-    if(lst&&lst.data) localStorage.setItem('curanova_lists', JSON.stringify(lst.data));
+    if(lst&&lst.data){ // union remote + local pick-lists so neither device loses additions
+      const loc=loadJSON('curanova_lists',{}), rem=lst.data, out={};
+      new Set([...Object.keys(loc),...Object.keys(rem)]).forEach(k=>{ out[k]=[...new Set([...(rem[k]||[]),...(loc[k]||[])])]; });
+      localStorage.setItem('curanova_lists', JSON.stringify(out));
+    }
   }catch(e){ console.warn('cloudPull',e); toast('Could not reach shared records — showing local copy',true); }
 }
 /* ---- offline sync queue: never lose a write ---- */
@@ -2282,19 +2310,27 @@ async function flushQueue(){
     try{
       if(op.type==='delete'){ const {error}=await sb.from('patients').delete().eq('mrn',op.mrn); if(error)throw error; }
       else if(op.type==='lists'){ const {error}=await sb.from('app_lists').upsert({id:1,data:loadJSON('curanova_lists',{})}); if(error)throw error; }
-      else { const p=getPatients()[op.mrn]; if(p){ const {error}=await sb.from('patients').upsert({mrn:p.mrn,name:p.name||'',dob:p.dob||'',data:p,updated_at:new Date().toISOString()}); if(error)throw error; } }
+      else { const p=getPatients()[op.mrn]; if(p) await pushPatientMerged(p); }
     }catch(e){ remaining.push(op); }
   }
   saveJSON('curanova_queue',remaining); updateCloudBadge();
   if(!remaining.length && q.length) toast('Offline changes synced');
 }
+/* fetch the cloud copy, merge with ours, write the union, and refresh local */
+async function pushPatientMerged(p){
+  const {data:ex,error:e0}=await sb.from('patients').select('data').eq('mrn',p.mrn).maybeSingle();
+  if(e0) throw e0;
+  const merged=mergePatient(ex&&ex.data, p);
+  const {error}=await sb.from('patients').upsert({mrn:merged.mrn,name:merged.name||'',dob:merged.dob||'',data:merged,updated_at:new Date().toISOString()});
+  if(error) throw error;
+  const patients=getPatients(); patients[merged.mrn]=merged; saveJSON('curanova_patients',patients);
+  return merged;
+}
 async function cloudUpsertPatient(p){
   if(!cloudEnabled) return;
   if(!cloudReady){ queueOp({type:'patient',mrn:p.mrn}); return; }
-  try{
-    const {error}=await sb.from('patients').upsert({mrn:p.mrn,name:p.name||'',dob:p.dob||'',data:p,updated_at:new Date().toISOString()});
-    if(error) throw error;
-  }catch(e){ console.warn('upsert',e); queueOp({type:'patient',mrn:p.mrn}); toast('Saved on this device — will sync when reconnected',true); }
+  try{ await pushPatientMerged(p); }
+  catch(e){ console.warn('upsert',e); queueOp({type:'patient',mrn:p.mrn}); toast('Saved on this device — will sync when reconnected',true); }
 }
 async function cloudDeletePatient(mrn){
   if(!cloudEnabled) return;
@@ -2343,6 +2379,7 @@ async function submitLock(){
   btn.disabled=false; btn.textContent='Unlock';
 }
 async function cloudSignOut(){ audit('logout','signed out'); try{ if(sb) await sb.auth.signOut(); }catch(e){} location.reload(); }
+function workOffline(){ hideLock(); toast('Working offline — sign in later to sync'); updateCloudBadge(); if(active==='log')renderLog(); else recalc(); }
 /* ---- audit viewer ---- */
 function showAudit(){
   const log=[...loadJSON('curanova_audit',[])].reverse();
