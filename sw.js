@@ -1,6 +1,6 @@
 /* CuraNova service worker — offline app shell + safe passthrough for Supabase */
-const CACHE = 'curanova-v3';
-const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './logo.svg'];
+const CACHE = 'curanova-v4';
+const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './logo-tile.png'];
 const EXTRA = ['https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'];
 
 self.addEventListener('install', e => {
