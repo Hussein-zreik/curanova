@@ -333,6 +333,7 @@
   .cloud-chip .cd{width:7px;height:7px;border-radius:50%;background:currentColor}
   .cloud-signout{font-size:11.5px;color:var(--muted);cursor:pointer;text-decoration:underline;margin-left:10px}
   .cloud-signout:hover{color:var(--high)}
+  .is-physician .dock{display:none!important}
 
   /* ---------- caseload dashboard + filters ---------- */
   .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
@@ -1804,7 +1805,8 @@ function renderDashboard(arr){
 }
 function renderLog(){
   const q=(document.getElementById('logSearch').value||'').toLowerCase().trim();
-  const arr=Object.values(getPatients()).sort((a,b)=>lastTime(b)-lastTime(a));
+  let arr=Object.values(getPatients()).sort((a,b)=>lastTime(b)-lastTime(a));
+  if(userRole==='physician') arr=arr.filter(p=>patientBelongsToPhysician(p,physicianName));
   renderDashboard(arr);
   document.querySelectorAll('#tool-log .chipbtn[data-f]').forEach(b=>b.classList.toggle('active',b.dataset.f===logFilter));
   const filtered=arr.filter(p=>matchesFilter(p) && (!q||(p.mrn||'').toLowerCase().includes(q)||(p.name||'').toLowerCase().includes(q)||(p.dob||'').toLowerCase().includes(q)));
@@ -1818,7 +1820,9 @@ function renderLog(){
 /* CSV export of every visit */
 function exportCSV(){
   const rows=[['MRN','Patient','DOB','Wound','Visit date','Tool','Area cm2','BWAT','% from baseline','Status','Nurse','Physician','Next visit','Alerts']];
-  Object.values(getPatients()).forEach(p=>{
+  let pts=Object.values(getPatients());
+  if(userRole==='physician') pts=pts.filter(p=>patientBelongsToPhysician(p,physicianName));
+  pts.forEach(p=>{
     Object.entries(groupWounds(p)).forEach(([wound,vs])=>{
       [...vs].sort((a,b)=>new Date(a.savedAt)-new Date(b.savedAt)).forEach(v=>{
         rows.push([p.mrn,p.name||'',p.dob||'',wound,v.date||fmtDate(v.savedAt),v.toolTitle||v.tool||'',
@@ -1861,7 +1865,7 @@ function visitHTML(v){
       <div class="vh-sub">${esc(v.date||fmtDate(v.savedAt))}${v.nurse?` · ${esc(v.nurse)}`:''}${typeof v.area==='number'?` · ${v.area} cm²`:''}${v.bwat!=null?` · BWAT ${v.bwat}`:''}</div>
       ${badges?`<div class="vbadges" style="margin-top:4px">${badges}</div>`:''}</div>
     ${scoreLine}<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
-    <div class="visit-b"><div class="vgrid">${alertsHTML}${body}</div><button class="del-visit" onclick="deleteVisit('${v.id}')">Delete this visit</button></div></div>`;
+    <div class="visit-b"><div class="vgrid">${alertsHTML}${body}</div>${userRole==='physician'?'':`<button class="del-visit" onclick="deleteVisit('${v.id}')">Delete this visit</button>`}</div></div>`;
 }
 function openPatient(mrn){
   const p=getPatients()[mrn];if(!p)return;openMrn=mrn;
@@ -2258,17 +2262,38 @@ async function cloudInit(){
     if(session) await onAuthed(); else showLock();
   }catch(e){ console.warn('cloudInit',e); showLock(); }
 }
-let currentUser='';
+let currentUser='', userRole='clinician', physicianName='';
 async function onAuthed(){
   cloudReady=true; hideLock();
-  try{ const {data:{user}}=await sb.auth.getUser(); currentUser=user?.email||CLOUD.email; }catch(e){ currentUser=CLOUD.email; }
+  try{ const {data:{user}}=await sb.auth.getUser(); currentUser=user?.email||CLOUD.email;
+    // role lookup: a physician account has a profiles row (role='physician')
+    try{ const {data:prof}=await sb.from('profiles').select('role,physician_name,full_name').eq('id',user.id).maybeSingle();
+      if(prof){ userRole=prof.role||'clinician'; physicianName=prof.physician_name||''; if(prof.full_name)currentUser=prof.full_name; } }catch(e){}
+  }catch(e){ currentUser=CLOUD.email; }
+  applyRole();
   await flushQueue();   // push local/offline changes up first, then reconcile
   await cloudPull();
   renderDatalists();
-  if(active==='log') renderLog(); else recalc();
+  if(userRole==='physician') switchTool('log'); else if(active==='log') renderLog(); else recalc();
   updateCloudBadge();
   subscribeRealtime();
-  audit('login','signed in');
+  audit('login', userRole==='physician'?`physician portal (${physicianName})`:'signed in');
+}
+/* ---- physician portal: read-only, scoped to their referred patients ---- */
+function applyRole(){
+  const phys = userRole==='physician';
+  document.body.classList.toggle('is-physician', phys);
+  assessTools.forEach(t=>{const btn=document.querySelector(`.tab[data-tool="${t}"]`); if(btn)btn.style.display=phys?'none':'';});
+  let pb=document.getElementById('portalBanner');
+  if(phys){
+    if(!pb){ pb=document.createElement('div'); pb.id='portalBanner'; pb.className='callout info no-print-log'; pb.style.margin='0 0 4px'; tools.log.prepend(pb); }
+    pb.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg><span><b>Physician Portal</b> — read-only view of patients referred to <b>${esc(physicianName||currentUser)}</b>. Contact the nursing team to update a plan.</span>`;
+    pb.style.display='';
+  } else if(pb){ pb.style.display='none'; }
+}
+function patientBelongsToPhysician(p,name){
+  const n=(name||'').toLowerCase().trim(); if(!n)return false;
+  return (p.visits||[]).some(v=>(v.physician||'').toLowerCase().includes(n));
 }
 /* merge two copies of a patient so concurrent offline edits both survive */
 function mergePatient(remote,local){
@@ -2360,8 +2385,8 @@ function subscribeRealtime(){
 function updateCloudBadge(){
   const el=document.getElementById('cloudStatus'); if(!el)return;
   const pending=getQueue().length;
-  if(cloudReady) el.innerHTML=`<span class="cloud-chip"><span class="cd"></span>Shared · ${pending?pending+' pending':'synced'}</span>`
-    +`<span class="cloud-signout" onclick="showAudit()">Audit</span><span class="cloud-signout" onclick="cloudSignOut()">Sign out${currentUser?' ('+esc(currentUser.split('@')[0])+')':''}</span>`;
+  if(cloudReady) el.innerHTML=`<span class="cloud-chip"><span class="cd"></span>${userRole==='physician'?'Physician · ':'Shared · '}${pending?pending+' pending':'synced'}</span>`
+    +`${userRole==='physician'?'':`<span class="cloud-signout" onclick="showAudit()">Audit</span>`}<span class="cloud-signout" onclick="cloudSignOut()">Sign out${currentUser?' ('+esc((currentUser.split('@')[0])||'')+')':''}</span>`;
   else if(cloudEnabled) el.innerHTML=`<span class="cloud-chip off"><span class="cd"></span>Offline${pending?' — '+pending+' pending':' — local copy'}</span>`;
   else el.innerHTML=`<span class="cloud-signout" onclick="showAudit()">Audit</span>`;
 }

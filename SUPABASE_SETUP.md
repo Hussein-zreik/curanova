@@ -68,6 +68,69 @@ a partner their **own** login instead of the shared code, add another user in
 **Authentication → Users** with their email + password; they enter those two on
 the lock screen. The audit log then attributes actions to each person.
 
+## Physician Portal (read-only, scoped access)
+
+Referring physicians can log in and see **only their own** patients, read-only.
+This is enforced at the database level with row-level security — a physician
+cannot query another physician's patients even with the API keys.
+
+### 1. Run this SQL (SQL Editor → New query → Run)
+
+```sql
+-- who is who: a profiles row exists only for physician (or admin) accounts.
+-- Nurses/shared logins need NO profile row — they keep full access.
+create table if not exists profiles (
+  id             uuid primary key references auth.users(id) on delete cascade,
+  role           text not null default 'physician',   -- 'physician' | 'nurse' | 'admin'
+  physician_name text,                                 -- must appear in the "Referring physician" field
+  full_name      text
+);
+alter table profiles enable row level security;
+drop policy if exists "read own profile" on profiles;
+create policy "read own profile" on profiles for select to authenticated using (id = auth.uid());
+
+-- replace the open patients policy with role-scoped policies
+drop policy if exists "team read/write patients" on patients;
+drop policy if exists "team rw patients"        on patients;
+
+-- clinicians (no profile, or role nurse/admin) get full read/write
+create policy "clinicians full patients" on patients for all to authenticated
+  using ( not exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'physician') )
+  with check ( not exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'physician') );
+
+-- physicians get read-only access to patients where they are a referring physician
+create policy "physician read scoped" on patients for select to authenticated
+  using ( exists (
+    select 1 from profiles p
+    where p.id = auth.uid() and p.role = 'physician'
+      and exists (
+        select 1 from jsonb_array_elements(patients.data->'visits') v
+        where lower(v->>'physician') like '%' || lower(p.physician_name) || '%'
+      )
+  ) );
+```
+
+> Safe to re-run. This keeps every existing nurse/shared login working with full
+> access (they have no `profiles` row) and only restricts accounts you mark as
+> physicians.
+
+### 2. Create a physician account
+1. **Authentication → Users → Add user → Create new user** — the doctor's email +
+   a password, ✅ **Auto Confirm User**. Copy the new user's **UID**.
+2. **SQL Editor**, insert their profile (match `physician_name` to how nurses type
+   the referring physician — a partial match works):
+
+```sql
+insert into profiles (id, role, physician_name, full_name)
+values ('PASTE-USER-UID', 'physician', 'Haddad', 'Dr. Elie Haddad');
+```
+
+### 3. How it works
+The doctor opens the same link, enters their **email + password**. The app detects
+the physician role, hides the assessment tabs, and shows a **read-only Patient Log
+scoped to their patients** — trajectories, photos, alerts, and a Print/Save-PDF.
+Nurses are unaffected. To change what a doctor sees, edit their `physician_name`.
+
 ## 3. Create the shared login (this password = your access code)
 1. Go to **Authentication → Users → Add user → Create new user**.
 2. **Email:** use the same one you'll put in the config below
