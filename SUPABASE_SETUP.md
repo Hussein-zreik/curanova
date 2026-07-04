@@ -131,6 +131,34 @@ the physician role, hides the assessment tabs, and shows a **read-only Patient L
 scoped to their patients** — trajectories, photos, alerts, and a Print/Save-PDF.
 Nurses are unaffected. To change what a doctor sees, edit their `physician_name`.
 
+## Physician sign-off (append-only oversight record)
+
+Physicians can add a timestamped **sign-off** (direction + note) on a patient from
+the portal; nurses see it on the patient record. Sign-offs live in their own
+append-only table, so physicians never get write access to clinical data.
+
+Run this SQL:
+
+```sql
+create table if not exists signoffs (
+  id        text primary key,
+  mrn       text,
+  by_email  text,
+  by_name   text,
+  ts        timestamptz default now(),
+  direction text,
+  note      text
+);
+alter table signoffs enable row level security;
+drop policy if exists "read signoffs"   on signoffs;
+drop policy if exists "insert signoffs" on signoffs;
+create policy "read signoffs"   on signoffs for select to authenticated using (true);
+create policy "insert signoffs"  on signoffs for insert to authenticated with check (true);
+```
+
+That's all — physicians can now sign off from their portal, and their direction is
+recorded against the patient (visible to the nursing team and on the printout).
+
 ## 3. Create the shared login (this password = your access code)
 1. Go to **Authentication → Users → Add user → Create new user**.
 2. **Email:** use the same one you'll put in the config below

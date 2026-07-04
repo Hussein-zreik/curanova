@@ -335,6 +335,17 @@
   .cloud-signout:hover{color:var(--high)}
   .is-physician .dock{display:none!important}
 
+  /* ---------- physician sign-off ---------- */
+  .signoff-block{border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;margin-top:12px;background:var(--canvas-2)}
+  .signoff-block .so-title{font-family:'Plus Jakarta Sans';font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+  .signoff-form{display:flex;flex-direction:column;gap:8px;padding:12px;background:#fff;border:1px solid var(--border-2);border-radius:10px;margin-bottom:10px}
+  .signoff-form .so-h{font-weight:700;font-size:13px;color:var(--navy)}
+  .signoff-form .btn{align-self:flex-start}
+  .signoff-card{background:#fff;border:1px solid var(--border-2);border-radius:10px;padding:11px 13px;margin-top:8px}
+  .signoff-card .so-meta{font-size:12px;color:var(--muted)}
+  .signoff-card .so-dir{font-weight:700;color:var(--teal)}
+  .signoff-card .so-note{font-size:13px;margin-top:5px;line-height:1.5;white-space:pre-wrap;color:var(--ink)}
+
   /* ---------- caseload dashboard + filters ---------- */
   .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
   .dtile{border:1px solid var(--border-2);border-radius:12px;padding:12px 14px;background:var(--canvas-2);cursor:pointer;transition:.14s}
@@ -1882,6 +1893,7 @@ function openPatient(mrn){
       <div><h3 class="jakarta">${esc(p.name||'(unnamed)')}</h3>
         <div class="ph-meta"><span class="mono">MRN ${esc(p.mrn)}</span>${p.dob?`<span>DOB <b>${esc(p.dob)}</b></span>`:''}<span><b>${p.visits.length}</b> visit${p.visits.length!==1?'s':''}</span>${md?`<span>Referring: <b>${esc(md.physician)}</b></span>`:''}</div></div></div>
     ${patientAssessmentLine(p)}
+    ${signoffSection(p)}
     ${trajectoryHTML(p)}
     ${[...p.visits].reverse().map(visitHTML).join('')}
   </div></div>`;
@@ -1895,6 +1907,42 @@ function closePatient(){
   renderLog();
 }
 function printPatient(){ if(openMrn)audit('print',`MRN ${openMrn}`); window.print(); }
+
+/* ---- physician sign-off (append-only oversight record) ---- */
+function getSignoffs(){return loadJSON('curanova_signoffs',{});}
+function signoffsFor(mrn){return (getSignoffs()[mrn]||[]).slice().sort((a,b)=>new Date(b.ts)-new Date(a.ts));}
+function saveSignoffLocal(e){const all=getSignoffs();all[e.mrn]=all[e.mrn]||[];if(!all[e.mrn].some(x=>x.id===e.id))all[e.mrn].push(e);saveJSON('curanova_signoffs',all);}
+function signoffSection(p){
+  const list=signoffsFor(p.mrn);
+  let form='';
+  if(userRole==='physician'){
+    form=`<div class="so-h">Add your sign-off</div>
+      <select id="soDir">
+        <option>Continue current plan</option>
+        <option>Adjust plan — see note</option>
+        <option>Review in clinic</option>
+        <option>Urgent — contact nursing team</option>
+        <option>Acknowledged — no change</option>
+        <option>Other</option>
+      </select>
+      <textarea id="soNote" placeholder="Clinical direction / note to the nursing team…"></textarea>
+      <button class="btn btn-primary" onclick="submitSignoff('${escAttr(p.mrn)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg><span>Sign &amp; submit</span></button>`;
+  }
+  const cards=list.map(s=>`<div class="signoff-card"><div class="so-meta"><b>${esc(s.byName||s.by||'Physician')}</b> · ${esc(fmtDateTime(s.ts))}${s.direction?` · <span class="so-dir">${esc(s.direction)}</span>`:''}</div>${s.note?`<div class="so-note">${esc(s.note)}</div>`:''}</div>`).join('');
+  if(!form && !cards) return '';
+  return `<div class="signoff-block"><div class="so-title">Physician sign-off</div>${form?`<div class="signoff-form no-print-log">${form}</div>`:''}${cards||'<div class="hint" style="margin-top:4px">No physician sign-off yet.</div>'}</div>`;
+}
+function submitSignoff(mrn){
+  const dir=(document.getElementById('soDir')||{}).value||'';
+  const note=((document.getElementById('soNote')||{}).value||'').trim();
+  if(!note && !dir){toast('Add a note or direction',true);return;}
+  const e={id:'s'+Date.now()+Math.random().toString(36).slice(2,6),mrn,by:currentUser,byName:currentUser||physicianName,ts:new Date().toISOString(),direction:dir,note};
+  saveSignoffLocal(e);
+  cloudInsertSignoff(e);
+  audit('signoff',`MRN ${mrn}${dir?' · '+dir:''}`);
+  toast('Sign-off recorded');
+  openPatient(mrn);
+}
 function deleteVisit(vid){
   if(!openMrn)return;
   if(!confirm('Delete this visit from the patient record? This cannot be undone.'))return;
@@ -2319,12 +2367,23 @@ async function cloudPull(){
       new Set([...Object.keys(loc),...Object.keys(rem)]).forEach(k=>{ out[k]=[...new Set([...(rem[k]||[]),...(loc[k]||[])])]; });
       localStorage.setItem('curanova_lists', JSON.stringify(out));
     }
+    // physician sign-offs (own table; ignore if not created yet)
+    try{
+      const {data:sos}=await sb.from('signoffs').select('*');
+      if(sos){ const local=getSignoffs(), byMrn={};
+        sos.forEach(r=>{ (byMrn[r.mrn]=byMrn[r.mrn]||[]).push({id:r.id,mrn:r.mrn,by:r.by_email,byName:r.by_name,ts:r.ts,direction:r.direction,note:r.note}); });
+        const out={...local};
+        Object.keys(byMrn).forEach(mrn=>{ const ids=new Set(byMrn[mrn].map(x=>x.id)); out[mrn]=[...byMrn[mrn],...((local[mrn]||[]).filter(x=>!ids.has(x.id)))]; });
+        localStorage.setItem('curanova_signoffs', JSON.stringify(out));
+      }
+    }catch(_){}
   }catch(e){ console.warn('cloudPull',e); toast('Could not reach shared records — showing local copy',true); }
 }
 /* ---- offline sync queue: never lose a write ---- */
 function getQueue(){return loadJSON('curanova_queue',[]);}
 function queueOp(op){
-  const q=getQueue().filter(o=>!(o.type===op.type && o.mrn===op.mrn)); // dedupe same target
+  let q=getQueue();
+  if(op.type!=='signoff') q=q.filter(o=>!(o.type===op.type && o.mrn===op.mrn)); // dedupe same target (not sign-offs)
   q.push(op); saveJSON('curanova_queue',q); updateCloudBadge();
 }
 async function flushQueue(){
@@ -2335,11 +2394,18 @@ async function flushQueue(){
     try{
       if(op.type==='delete'){ const {error}=await sb.from('patients').delete().eq('mrn',op.mrn); if(error)throw error; }
       else if(op.type==='lists'){ const {error}=await sb.from('app_lists').upsert({id:1,data:loadJSON('curanova_lists',{})}); if(error)throw error; }
+      else if(op.type==='signoff'){ const e=op.payload; const {error}=await sb.from('signoffs').upsert({id:e.id,mrn:e.mrn,by_email:e.by,by_name:e.byName,ts:e.ts,direction:e.direction,note:e.note}); if(error)throw error; }
       else { const p=getPatients()[op.mrn]; if(p) await pushPatientMerged(p); }
     }catch(e){ remaining.push(op); }
   }
   saveJSON('curanova_queue',remaining); updateCloudBadge();
   if(!remaining.length && q.length) toast('Offline changes synced');
+}
+async function cloudInsertSignoff(e){
+  if(!cloudEnabled) return;
+  if(!cloudReady){ queueOp({type:'signoff',mrn:e.mrn,payload:e}); return; }
+  try{ const {error}=await sb.from('signoffs').upsert({id:e.id,mrn:e.mrn,by_email:e.by,by_name:e.byName,ts:e.ts,direction:e.direction,note:e.note}); if(error)throw error; }
+  catch(err){ console.warn('signoff',err); queueOp({type:'signoff',mrn:e.mrn,payload:e}); toast('Sign-off saved — will sync when reconnected',true); }
 }
 /* fetch the cloud copy, merge with ours, write the union, and refresh local */
 async function pushPatientMerged(p){
