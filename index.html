@@ -41,11 +41,11 @@
 
   header.top{
     background:linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 55%,#134B5E 100%);
-    color:#fff;padding:22px 0 0;position:relative;overflow:hidden;
+    color:#fff;padding:calc(18px + env(safe-area-inset-top,0px)) 0 0;position:relative;overflow:hidden;
   }
   header.top::after{content:"";position:absolute;right:-60px;top:-60px;width:280px;height:280px;
     background:radial-gradient(circle,rgba(20,184,166,.28),transparent 65%);pointer-events:none}
-  .top-inner{max-width:960px;margin:0 auto;padding:0 16px}
+  .top-inner{max-width:960px;margin:0 auto;padding:0 calc(16px + env(safe-area-inset-right,0px)) 0 calc(16px + env(safe-area-inset-left,0px))}
   .brand{display:flex;align-items:center;gap:13px;position:relative;z-index:2}
   .mark{width:42px;height:42px;border-radius:11px;background:#fff;overflow:hidden;
     display:grid;place-items:center;flex:none;box-shadow:0 4px 14px rgba(11,42,67,.20)}
@@ -87,6 +87,7 @@
   .g3{grid-template-columns:1fr 1fr 1fr}
   .g4{grid-template-columns:repeat(4,1fr)}
   @media(max-width:680px){.g2,.g3,.g4{grid-template-columns:1fr}.g4.keep,.g3.keep{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.g3.keep{grid-template-columns:1fr}}
   .field{display:flex;flex-direction:column;gap:6px;min-width:0}
   .field.span2{grid-column:span 2}
   @media(max-width:680px){.field.span2{grid-column:auto}}
@@ -94,9 +95,11 @@
   label .tag{font-family:'IBM Plex Mono';font-size:10px;font-weight:600;color:var(--teal);
     background:var(--teal-tint);padding:1px 6px;border-radius:5px;letter-spacing:.02em}
   input[type=text],input[type=date],input[type=number],select,textarea{
-    font-family:'Inter';font-size:14px;color:var(--ink);background:#fff;
-    border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;width:100%;
+    font-family:'Inter';font-size:16px;color:var(--ink);background:#fff;
+    border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;width:100%;min-width:0;
     transition:border-color .15s,box-shadow .15s}
+  @media(min-width:520px){input[type=text],input[type=date],input[type=number],select,textarea{font-size:14px}}
+  input[type=date]{min-height:42px}
   input:focus,select:focus,textarea:focus{outline:0;border-color:var(--teal);
     box-shadow:0 0 0 3px rgba(13,148,136,.13)}
   select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%235D6E7E' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
@@ -185,7 +188,7 @@
   .dock{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(255,255,255,.92);
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--border);
     box-shadow:0 -6px 30px rgba(11,42,67,.1)}
-  .dock-in{max-width:960px;margin:0 auto;padding:11px 16px;display:flex;align-items:center;gap:16px}
+  .dock-in{max-width:960px;margin:0 auto;padding:11px calc(16px + env(safe-area-inset-right,0px)) calc(11px + env(safe-area-inset-bottom,0px)) calc(16px + env(safe-area-inset-left,0px));display:flex;align-items:center;gap:16px}
   .score-badge{display:flex;align-items:center;gap:13px;flex:1;min-width:0}
   .score-num{font-family:'IBM Plex Mono';font-weight:600;font-size:30px;line-height:1;color:var(--navy);flex:none}
   .score-num small{font-size:14px;color:var(--muted-2)}
