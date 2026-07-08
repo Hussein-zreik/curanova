@@ -1316,13 +1316,40 @@
 <div class="lock" id="lockScreen">
   <div class="lock-card">
     <div class="mark"><img src="logo-tile.png" alt="CuraNova" class="cn-logo"></div>
-    <h2 class="jakarta">CuraNova — Secure Access</h2>
-    <p>Enter your access code to open the shared patient log. Partners with their own login can change the email below.</p>
-    <input id="lockEmail" type="email" placeholder="Login email" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('lockCode').focus()">
-    <input id="lockCode" type="password" placeholder="Access code / password" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitLock()">
-    <div class="lock-err" id="lockErr"></div>
-    <button class="btn btn-primary" id="lockBtn" onclick="submitLock()">Unlock</button>
-    <div class="lock-foot">🔒 Patient records are shared securely across your team.<br><a class="lock-offline" onclick="workOffline()">Work offline on this device →</a></div>
+
+    <!-- sign in -->
+    <div id="lockSignin">
+      <h2 class="jakarta">CuraNova — Secure Access</h2>
+      <p>Enter your access code to open the shared patient log. Partners with their own login can change the email below.</p>
+      <input id="lockEmail" type="email" placeholder="Login email" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('lockCode').focus()">
+      <input id="lockCode" type="password" placeholder="Access code / password" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitLock()">
+      <div class="lock-err" id="lockErr"></div>
+      <button class="btn btn-primary" id="lockBtn" onclick="submitLock()">Unlock</button>
+      <div class="lock-foot">🔒 Patient records are shared securely across your team.<br>
+        <a class="lock-offline" onclick="showResetView()">Physician? Reset your password →</a><br>
+        <a class="lock-offline" onclick="workOffline()">Work offline on this device →</a></div>
+    </div>
+
+    <!-- request a reset link -->
+    <div id="lockReset" style="display:none">
+      <h2 class="jakarta">Reset your password</h2>
+      <p>For <b>physician accounts</b>. Enter your email and we'll send a secure link to set a new password.</p>
+      <input id="resetEmail" type="email" placeholder="Your email" autocomplete="username" onkeydown="if(event.key==='Enter')sendReset()">
+      <div class="lock-err" id="lockResetMsg" style="color:var(--teal)"></div>
+      <button class="btn btn-primary" id="resetBtn" onclick="sendReset()">Send reset link</button>
+      <div class="lock-foot"><a class="lock-offline" onclick="showSigninView()">← Back to sign in</a></div>
+    </div>
+
+    <!-- set a new password (after clicking the email link) -->
+    <div id="lockNewpw" style="display:none">
+      <h2 class="jakarta">Set a new password</h2>
+      <p>Choose a new password for your physician account.</p>
+      <input id="newPw" type="password" placeholder="New password (8+ characters)" autocomplete="new-password">
+      <input id="newPw2" type="password" placeholder="Confirm new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')saveNewPassword()">
+      <div class="lock-err" id="newPwMsg" style="color:var(--teal)"></div>
+      <button class="btn btn-primary" id="newPwBtn" onclick="saveNewPassword()">Save new password</button>
+    </div>
+
   </div>
 </div>
 
@@ -2329,12 +2356,17 @@ async function cloudInit(){
   if(!window.supabase){ toast('Cloud library unavailable — working offline',true); return; }
   try{
     sb = window.supabase.createClient(CLOUD.url, CLOUD.anonKey, {auth:{persistSession:true}});
+    // Physician password reset: when arriving from the emailed link, show the
+    // "set a new password" screen instead of signing straight in.
+    sb.auth.onAuthStateChange((event)=>{ if(event==='PASSWORD_RECOVERY'){ recovering=true; openNewPw(); } });
+    if(location.hash.includes('type=recovery')){ recovering=true; openNewPw(); return; }
     const {data:{session}} = await sb.auth.getSession();
     if(session) await onAuthed(); else showLock();
   }catch(e){ console.warn('cloudInit',e); showLock(); }
 }
-let currentUser='', userRole='clinician', physicianName='';
+let currentUser='', userRole='clinician', physicianName='', recovering=false;
 async function onAuthed(){
+  if(recovering) return;   // mid password-reset: wait for the new password to be set
   cloudReady=true; hideLock();
   try{ const {data:{user}}=await sb.auth.getUser(); currentUser=user?.email||CLOUD.email;
     // role lookup: a physician account has a profiles row (role='physician')
@@ -2480,8 +2512,37 @@ function updateCloudBadge(){
   else if(cloudEnabled) el.innerHTML=`<span class="cloud-chip off"><span class="cd"></span>Offline${pending?' — '+pending+' pending':' — local copy'}</span>`;
   else el.innerHTML=`<span class="cloud-signout" onclick="showAudit()">Audit</span>`;
 }
-function showLock(){ const em=document.getElementById('lockEmail'); if(em&&!em.value)em.value=CLOUD.email; document.getElementById('lockScreen').classList.add('show'); document.getElementById('lockCode').focus(); }
+function showLock(){ if(recovering)return; showSigninView(); const em=document.getElementById('lockEmail'); if(em&&!em.value)em.value=CLOUD.email; document.getElementById('lockScreen').classList.add('show'); document.getElementById('lockCode').focus(); }
 function hideLock(){ document.getElementById('lockScreen').classList.remove('show'); }
+/* ---- physician self-service password reset ---- */
+function showSigninView(){ document.getElementById('lockSignin').style.display=''; document.getElementById('lockReset').style.display='none'; document.getElementById('lockNewpw').style.display='none'; }
+function showResetView(){ document.getElementById('lockSignin').style.display='none'; document.getElementById('lockNewpw').style.display='none'; document.getElementById('lockReset').style.display=''; const r=document.getElementById('resetEmail'),l=document.getElementById('lockEmail'); if(r&&!r.value&&l&&l.value&&l.value!==CLOUD.email)r.value=l.value; document.getElementById('lockResetMsg').textContent=''; if(r)r.focus(); }
+function openNewPw(){ document.getElementById('lockScreen').classList.add('show'); document.getElementById('lockSignin').style.display='none'; document.getElementById('lockReset').style.display='none'; document.getElementById('lockNewpw').style.display=''; const f=document.getElementById('newPw'); if(f)f.focus(); }
+async function sendReset(){
+  const em=(document.getElementById('resetEmail').value||'').trim(); const msg=document.getElementById('lockResetMsg'), btn=document.getElementById('resetBtn');
+  if(!em){ msg.style.color='var(--high)'; msg.textContent='Please enter your email.'; return; }
+  if(CLOUD.email && em.toLowerCase()===CLOUD.email.toLowerCase()){ msg.style.color='var(--high)'; msg.textContent='This is the shared team login — it can’t be reset here. This option is for physician accounts.'; return; }
+  if(!sb){ msg.style.color='var(--high)'; msg.textContent='Not connected. Check your internet and try again.'; return; }
+  btn.disabled=true; btn.textContent='Sending…';
+  try{
+    await sb.auth.resetPasswordForEmail(em,{redirectTo:location.origin+location.pathname});
+    msg.style.color='var(--teal)'; msg.textContent='If a physician account uses this email, a reset link is on its way. Check your inbox and spam folder.';
+  }catch(e){ msg.style.color='var(--high)'; msg.textContent='Could not send right now. Check your connection and try again.'; }
+  btn.disabled=false; btn.textContent='Send reset link';
+}
+async function saveNewPassword(){
+  const p1=document.getElementById('newPw').value||'', p2=document.getElementById('newPw2').value||''; const msg=document.getElementById('newPwMsg'), btn=document.getElementById('newPwBtn');
+  if(p1.length<8){ msg.style.color='var(--high)'; msg.textContent='Use at least 8 characters.'; return; }
+  if(p1!==p2){ msg.style.color='var(--high)'; msg.textContent='The two passwords don’t match.'; return; }
+  btn.disabled=true; btn.textContent='Saving…';
+  try{
+    const {error}=await sb.auth.updateUser({password:p1});
+    if(error){ msg.style.color='var(--high)'; msg.textContent=(error.message||'Could not update — the link may have expired. Request a new one.'); btn.disabled=false; btn.textContent='Save new password'; return; }
+    recovering=false; history.replaceState(null,'',location.origin+location.pathname);
+    msg.style.color='var(--teal)'; msg.textContent='Password updated — signing you in…';
+    setTimeout(()=>location.reload(),900);
+  }catch(e){ msg.style.color='var(--high)'; msg.textContent='Something went wrong. Open the reset link again.'; btn.disabled=false; btn.textContent='Save new password'; }
+}
 async function submitLock(){
   const em=document.getElementById('lockEmail'), inp=document.getElementById('lockCode'), btn=document.getElementById('lockBtn'), err=document.getElementById('lockErr');
   const email=((em&&em.value)||CLOUD.email||'').trim(), code=(inp.value||'').trim(); if(!code){inp.focus();return;}
