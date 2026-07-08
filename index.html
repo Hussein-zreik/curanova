@@ -53,6 +53,14 @@
   .cn-logo{width:100%;height:100%;object-fit:contain;display:block}
   .brand-txt h1{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
   .brand-txt p{font-size:12.5px;color:#9FC7D4;font-weight:500;letter-spacing:.02em}
+  .top-signout{margin-left:auto;flex:none;appearance:none;cursor:pointer;
+    font-family:'Plus Jakarta Sans';font-weight:600;font-size:12.5px;color:#fff;
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.32);
+    border-radius:9px;padding:8px 13px;display:inline-flex;align-items:center;gap:7px;transition:.15s}
+  .top-signout:hover{background:rgba(255,255,255,.24)}
+  .top-signout:focus-visible{outline:2px solid var(--teal-2);outline-offset:2px}
+  .top-signout svg{width:15px;height:15px;flex:none}
+  @media(max-width:460px){.top-signout .lbl{display:none}.top-signout{padding:9px 11px}}
   .sub{position:relative;z-index:2;margin:16px 0 0;font-size:13px;color:#BBD6DF;max-width:640px;line-height:1.55}
   .sub b{color:#fff;font-weight:600}
 
@@ -550,6 +558,7 @@
         <h1>CuraNova</h1>
         <p>Wound Assessment Tool · Home Nursing</p>
       </div>
+      <button id="topSignOut" class="top-signout no-print" onclick="cloudSignOut()" style="display:none" title="Sign out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12H3M9 6l-6 6 6 6M14 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5"/></svg><span class="lbl">Sign out</span></button>
     </div>
     <p class="sub">Standardised, guideline-based wound assessment for field documentation. Each module auto-calculates a <b>validated severity score</b> and generates a printable record for the referring physician. Built on <b>IWGDF 2023</b>, <b>IWGDF/IDSA</b>, <b>ADA Standards of Care 2025</b>, <b>NPIAP/EPUAP 2019</b>, <b>CDC/NHSN</b> and the <b>Braden Scale</b>.</p>
     <nav class="tabs">
@@ -2349,7 +2358,7 @@ function applyRole(){
   let pb=document.getElementById('portalBanner');
   if(phys){
     if(!pb){ pb=document.createElement('div'); pb.id='portalBanner'; pb.className='callout info no-print-log'; pb.style.margin='0 0 4px'; tools.log.prepend(pb); }
-    pb.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg><span style="flex:1"><b>Physician Portal</b> — read-only view of patients referred to <b>${esc(physicianName||currentUser)}</b>. Contact the nursing team to update a plan.</span><button class="btn btn-ghost" style="flex:none;align-self:center;white-space:nowrap" onclick="cloudSignOut()">Sign out</button>`;
+    pb.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg><span><b>Physician Portal</b> — read-only view of patients referred to <b>${esc(physicianName||currentUser)}</b>. Contact the nursing team to update a plan.</span>`;
     pb.style.display='';
   } else if(pb){ pb.style.display='none'; }
 }
@@ -2463,10 +2472,11 @@ function subscribeRealtime(){
   }catch(e){ console.warn('realtime',e); }
 }
 function updateCloudBadge(){
+  const so=document.getElementById('topSignOut'); if(so) so.style.display = cloudReady ? '' : 'none';
   const el=document.getElementById('cloudStatus'); if(!el)return;
   const pending=getQueue().length;
-  if(cloudReady) el.innerHTML=`<span class="cloud-chip"><span class="cd"></span>${userRole==='physician'?'Physician · ':'Shared · '}${pending?pending+' pending':'synced'}</span>`
-    +`${userRole==='physician'?'':`<span class="cloud-signout" onclick="showAudit()">Audit</span>`}<span class="cloud-signout" onclick="cloudSignOut()">Sign out${currentUser?' ('+esc((currentUser.split('@')[0])||'')+')':''}</span>`;
+  if(cloudReady) el.innerHTML=`<span class="cloud-chip"><span class="cd"></span>${userRole==='physician'?'Physician · ':'Shared · '}${pending?pending+' pending':'synced'}${currentUser?' · '+esc((currentUser.split('@')[0])||''):''}</span>`
+    +`${userRole==='physician'?'':`<span class="cloud-signout" onclick="showAudit()">Audit</span>`}`;
   else if(cloudEnabled) el.innerHTML=`<span class="cloud-chip off"><span class="cd"></span>Offline${pending?' — '+pending+' pending':' — local copy'}</span>`;
   else el.innerHTML=`<span class="cloud-signout" onclick="showAudit()">Audit</span>`;
 }
