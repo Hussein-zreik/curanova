@@ -1,0 +1,529 @@
+<title>CuraNova — Wound Care Supply & Equipment Checklist</title>
+<style>
+  :root{
+    --navy:#0B2A43; --navy-2:#123B57; --teal:#0D9488; --teal-2:#14B8A6;
+    --canvas:#F1F5F4; --paper:#FFFFFF; --ink:#14262E; --muted:#5B6E77;
+    --line:#DBE6E7; --line-2:#EAF1F1; --teal-tint:#E5F4F0;
+    --amber:#9A6412; --amber-tint:#F8EEDA;
+    --sans:-apple-system,"Segoe UI",Roboto,system-ui,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --canvas:#0B181D; --paper:#0F2129; --ink:#E7EFF1; --muted:#9AB0B7;
+      --line:#263B44; --line-2:#1B2F37; --teal-tint:#0F2E2C;
+      --amber:#D9A441; --amber-tint:#241B0E;
+    }
+  }
+  :root[data-theme="dark"]{
+    --canvas:#0B181D; --paper:#0F2129; --ink:#E7EFF1; --muted:#9AB0B7;
+    --line:#263B44; --line-2:#1B2F37; --teal-tint:#0F2E2C;
+    --amber:#D9A441; --amber-tint:#241B0E;
+  }
+  :root[data-theme="light"]{
+    --canvas:#F1F5F4; --paper:#FFFFFF; --ink:#14262E; --muted:#5B6E77;
+    --line:#DBE6E7; --line-2:#EAF1F1; --teal-tint:#E5F4F0;
+    --amber:#9A6412; --amber-tint:#F8EEDA;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--canvas);color:var(--ink);font-family:var(--sans);
+    line-height:1.45;-webkit-font-smoothing:antialiased;font-size:14px}
+  .wrap{max-width:940px;margin:0 auto;padding:26px 20px 60px}
+
+  /* ---- toolbar (screen only) ---- */
+  .bar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px}
+  .bar button{font:600 12.5px/1 var(--sans);color:#fff;background:var(--teal);
+    border:none;border-radius:8px;padding:9px 14px;cursor:pointer;letter-spacing:.01em}
+  .bar button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+  .bar button:focus-visible{outline:2px solid var(--teal-2);outline-offset:2px}
+
+  /* ---- masthead ---- */
+  header.mast{background:linear-gradient(135deg,var(--navy),var(--navy-2));
+    color:#fff;border-radius:16px;padding:22px 24px;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .lockup{display:flex;align-items:baseline;gap:10px}
+  .lockup .word{font-size:22px;font-weight:800;letter-spacing:-.02em}
+  .lockup .word b{color:var(--teal-2);font-weight:800}
+  .lockup .sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:#9FC6D2}
+  header.mast h1{margin:12px 0 0;font-size:23px;font-weight:800;letter-spacing:-.015em;
+    text-wrap:balance;line-height:1.15}
+  header.mast p.lede{margin:6px 0 0;font-size:13px;color:#B7D2DC;max-width:62ch}
+
+  /* fill-in meta line */
+  .meta{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:18px;
+    border-top:1px solid rgba(255,255,255,.16)}
+  .meta div{padding:11px 12px 3px;border-right:1px solid rgba(255,255,255,.12)}
+  .meta div:last-child{border-right:none}
+  .meta .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8FB6C2}
+  .meta .fill{height:15px;border-bottom:1px dotted rgba(255,255,255,.4);margin-top:9px}
+  @media(max-width:620px){.meta{grid-template-columns:1fr 1fr}
+    .meta div:nth-child(2){border-right:none}}
+
+  /* ---- legend ---- */
+  .legend{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;
+    background:var(--paper);border:1px solid var(--line);border-radius:12px;
+    padding:12px 16px;margin-top:16px;font-size:12px;color:var(--muted)}
+  .legend b{color:var(--ink)}
+  .legend .dot{display:inline-block;width:8px;height:8px;border-radius:50%;
+    background:var(--teal);vertical-align:middle;margin-right:6px}
+  .legend .sq{display:inline-block;width:12px;height:12px;border:1.5px solid var(--muted);
+    border-radius:3px;vertical-align:-2px;margin-right:6px}
+  .legend .rxt{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--amber);
+    background:var(--amber-tint);border-radius:4px;padding:1px 6px;letter-spacing:.03em;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+  /* ---- sections ---- */
+  section.cat{background:var(--paper);border:1px solid var(--line);border-radius:14px;
+    margin-top:16px;overflow:hidden;break-inside:avoid;page-break-inside:avoid;
+    box-shadow:0 1px 2px rgba(11,42,67,.04)}
+  .cat > h2{margin:0;display:flex;align-items:center;gap:11px;
+    padding:13px 16px;background:var(--teal-tint);border-bottom:1px solid var(--line);
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .cat > h2 .tag{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;
+    color:#fff;background:var(--teal);border-radius:5px;padding:3px 7px;flex:none;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .cat > h2 .nm{font-size:14.5px;font-weight:800;letter-spacing:-.01em;color:var(--navy)}
+  :root[data-theme="dark"] .cat > h2 .nm{color:var(--ink)}
+  @media(prefers-color-scheme:dark){.cat > h2 .nm{color:var(--ink)}}
+  .cat > h2 .ct{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);
+    flex:none}
+
+  table{width:100%;border-collapse:collapse}
+  thead th{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--muted);text-align:left;
+    padding:7px 10px;border-bottom:1px solid var(--line);background:var(--paper)}
+  th.n,td.n{text-align:center;width:52px}
+  th.chk,td.chk{text-align:center;width:34px}
+  tbody td{padding:8px 10px;border-bottom:1px solid var(--line-2);vertical-align:top;
+    font-size:13px}
+  tbody tr:last-child td{border-bottom:none}
+  td.item{font-weight:600;color:var(--ink)}
+  td.note{color:var(--muted);font-size:12px;line-height:1.4}
+  td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .writ{display:block;height:14px;border-bottom:1px dotted var(--line);min-width:38px}
+  .box{display:inline-block;width:14px;height:14px;border:1.5px solid var(--muted);
+    border-radius:3px}
+  .core{color:var(--teal)}
+  .core::before{content:"●";font-size:8px;vertical-align:2px;margin-right:5px}
+  .rx{font-family:var(--mono);font-size:9.5px;font-weight:700;color:var(--amber);
+    background:var(--amber-tint);border-radius:4px;padding:0 5px;margin-left:6px;
+    letter-spacing:.02em;white-space:nowrap;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+  /* ---- notes card ---- */
+  .notes{background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--teal);
+    border-radius:12px;padding:16px 18px;margin-top:18px;break-inside:avoid}
+  .notes h3{margin:0 0 8px;font-size:13px;font-weight:800;letter-spacing:.01em}
+  .notes ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+  .notes li{font-size:12.5px;color:var(--ink);line-height:1.45}
+  .notes li b{color:var(--navy)}
+  :root[data-theme="dark"] .notes li b{color:var(--teal-2)}
+  @media(prefers-color-scheme:dark){.notes li b{color:var(--teal-2)}}
+
+  footer{margin-top:22px;text-align:center;font-size:10.5px;color:var(--muted);
+    font-family:var(--mono);letter-spacing:.03em}
+
+  /* ---- print ---- */
+  @media print{
+    :root{--canvas:#fff;--paper:#fff}
+    body{background:#fff;font-size:10.5px}
+    .wrap{max-width:100%;padding:0}
+    .bar{display:none}
+    header.mast{border-radius:8px;padding:16px 18px}
+    header.mast h1{font-size:18px}
+    .legend,section.cat,.notes{box-shadow:none;border-radius:8px}
+    section.cat{margin-top:10px}
+    thead{display:table-header-group}
+    tbody td{padding:5px 8px;font-size:10px}
+    .cat > h2{padding:8px 12px}
+    .writ{min-width:34px}
+    @page{margin:12mm}
+  }
+</style>
+
+<div class="wrap">
+
+  <div class="bar">
+    <button onclick="window.print()">Print / Save PDF</button>
+    <button class="ghost" onclick="toggleTheme()">Toggle theme</button>
+  </div>
+
+  <header class="mast">
+    <div class="lockup">
+      <span class="word">Cura<b>Nova</b></span>
+      <span class="sub">Home Nursing · Advanced Wound Care</span>
+    </div>
+    <h1>Wound Care Supply &amp; Equipment Checklist</h1>
+    <p class="lede">Master procurement &amp; par-level sheet for a home wound-care service. Stock by
+      <b style="color:#fff">category</b>, then one or two brands each — let your case mix and CuraNova's
+      exudate/infection scores drive reorder volume.</p>
+    <div class="meta">
+      <div><div class="k">Prepared by</div><div class="fill"></div></div>
+      <div><div class="k">Location / Base</div><div class="fill"></div></div>
+      <div><div class="k">Count date</div><div class="fill"></div></div>
+      <div><div class="k">Next review</div><div class="fill"></div></div>
+    </div>
+  </header>
+
+  <div class="legend">
+    <span><span class="dot"></span><b>Core bag</b> — always carry</span>
+    <span><span class="rxt">ORDER-BACKED</span> needs a physician order / protocol</span>
+    <span><span class="sq"></span><b>Have</b> &amp; <b>Order</b> tick boxes</span>
+    <span><b>Par</b> = target stock · <b>On&nbsp;hand</b> = counted</span>
+  </div>
+
+  <!-- 1 -->
+  <section class="cat">
+    <h2><span class="tag">ASSESS</span><span class="nm">Assessment &amp; Measurement</span><span class="ct">10 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Disposable wound rulers / measuring tape</span></td><td class="note">cm scale, concentric grid — single use</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Sterile cotton-tip applicators</span></td><td class="note">depth, tunnelling &amp; undermining probing</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Handheld Doppler + gel</td><td class="note">ABI/ABPI <b>before any compression</b></td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">BP monitor + assorted cuffs</span></td><td class="note">ABI, vitals</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">10 g monofilament (Semmes-Weinstein)</td><td class="note">diabetic foot sensation</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">128 Hz tuning fork</td><td class="note">vibration / neuro screen</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Glucometer + strips + lancets</span></td><td class="note">diabetic wounds</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Infrared / digital thermometer</td><td class="note">periwound &amp; DFU temperature</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Pulse oximeter</td><td class="note">perfusion / vitals</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Camera / phone + color reference card</span></td><td class="note">feeds CuraNova photo module</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 2 -->
+  <section class="cat">
+    <h2><span class="tag">STERILE</span><span class="nm">Sterile Procedure Base</span><span class="ct">8 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Sterile dressing-change sets / trays</span></td><td class="note">forceps, scissors, gallipot, drape, gauze</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Sterile gloves</span></td><td class="note">sizes 6 – 8</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Non-sterile nitrile exam gloves</span></td><td class="note">S / M / L</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Waterproof under-pads ("chux")</span></td><td class="note">clean field on any surface</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Sterile / fenestrated drapes</td><td class="note">field isolation</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Sterile scissors &amp; forceps</td><td class="note">disposable + reusable backup</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Curettes / ring curettes<span class="rx">ORDER-BACKED</span></td><td class="note">conservative sharp debridement — within scope</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Disposable scalpels + handles<span class="rx">ORDER-BACKED</span></td><td class="note">#10, #15</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 3 -->
+  <section class="cat">
+    <h2><span class="tag">CLEAN</span><span class="nm">Cleansing &amp; Irrigation</span><span class="ct">6 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Sterile normal saline 0.9%</span></td><td class="note">sachets/pods + bottles — high volume</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Sterile water for irrigation</td><td class="note">—</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Surfactant / antimicrobial cleanser</td><td class="note">PHMB (Prontosan) or HOCl (Vashe)</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">30–60 mL syringes + blunt/splash tips</span></td><td class="note">18–19 G — safe irrigation pressure</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Bulb syringes</td><td class="note">gentle flush</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Antiseptic skin prep</td><td class="note">chlorhexidine / povidone — <b>intact skin only</b></td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 4 -->
+  <section class="cat">
+    <h2><span class="tag">DEBRIDE</span><span class="nm">Debridement</span><span class="ct">4 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Enzymatic debrider — collagenase<span class="rx">ORDER-BACKED</span></td><td class="note">Santyl or equivalent</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Monofilament debridement pads/cloths</td><td class="note">mechanical (Debrisoft)</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Amorphous hydrogel</td><td class="note">autolytic debridement (also §8)</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Sharp debridement kit<span class="rx">ORDER-BACKED</span></td><td class="note">scalpel/curette/forceps — within scope only</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 5 -->
+  <section class="cat">
+    <h2><span class="tag">DRESS·1</span><span class="nm">Primary — Gauze, Fillers &amp; Contact Layers</span><span class="ct">7 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Sterile gauze swabs</span></td><td class="note">various ply &amp; sizes</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Non-woven / lint-free gauze</td><td class="note">low-lint cleansing &amp; cover</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Ribbon / packing gauze</span></td><td class="note">plain + impregnated — cavities/tunnels</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Combine / ABD pads</td><td class="note">high-absorbency cover</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Silicone contact layer</span></td><td class="note">Mepitel / Mepitel One — atraumatic</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Lipido-colloid / knitted viscose</td><td class="note">Urgotul / Adaptic / Jelonet</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Activated charcoal dressing</td><td class="note">odour management (CarboFlex/Actisorb)</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 6 -->
+  <section class="cat">
+    <h2><span class="tag">DRESS·2</span><span class="nm">Primary — Foams (workhorse)</span><span class="ct">6 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Mepilex Border / Border Flex</span></td><td class="note">S/M/L — bordered silicone foam, main workhorse</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Mepilex (non-bordered)</span></td><td class="note">under compression / secondary fixation</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Mepilex Border Sacrum &amp; Heel</td><td class="note">anatomic shapes — pressure areas</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Mepilex Lite / Transfer</td><td class="note">low exudate / wicking layer</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Foam alternative</td><td class="note">Allevyn / Biatain — backup brand</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Bordered vs non-bordered mix</td><td class="note">silicone border for fragile skin</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 7 -->
+  <section class="cat">
+    <h2><span class="tag">DRESS·3</span><span class="nm">Primary — Exudate Management</span><span class="ct">5 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Calcium alginate</span></td><td class="note">Kaltostat / Sorbsan — sheet + rope</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Hydrofiber (gelling)</span></td><td class="note">Aquacel — sheet + ribbon</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Superabsorbent dressing</td><td class="note">Zetuvit Plus / Eclypse — heavy exudate</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Gelling fibre — cavity</td><td class="note">deep exuding cavities</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Capillary-action wick dressing</td><td class="note">moisture transfer to secondary</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 8 -->
+  <section class="cat">
+    <h2><span class="tag">DRESS·4</span><span class="nm">Primary — Moisture &amp; Occlusion</span><span class="ct">5 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Hydrocolloid — thin &amp; standard</td><td class="note">DuoDERM / Comfeel — light exudate</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Amorphous hydrogel (tube)</td><td class="note">dry / sloughy wounds, rehydration</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Hydrogel sheet</td><td class="note">painful superficial wounds</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Transparent film — rolls + islands</span></td><td class="note">Tegaderm / Opsite — retention, superficial</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Bordered island dressing</td><td class="note">surgical incisions</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 9 -->
+  <section class="cat">
+    <h2><span class="tag">ANTIMIC</span><span class="nm">Antimicrobial Dressings</span><span class="ct">6 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Silver dressing</span></td><td class="note">Aquacel Ag / Mepilex Ag / Acticoat</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Cadexomer iodine</td><td class="note">Iodosorb — sloughy, exuding, colonised</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Povidone-iodine dressing</td><td class="note">Inadine</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Medical-grade honey</td><td class="note">Medihoney — gel, paste, impregnated</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">PHMB dressing</td><td class="note">antimicrobial gauze / foam</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">DACC bacteria-binding</td><td class="note">Sorbact — no active agent</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 10 -->
+  <section class="cat">
+    <h2><span class="tag">ADVANCED</span><span class="nm">Advanced / Biologic &amp; NPWT</span><span class="ct">7 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Collagen / ECM dressing</td><td class="note">Puracol / Promogran — stalled wounds</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Skin substitute / CTP<span class="rx">ORDER-BACKED</span></td><td class="note">physician-directed budget line</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Portable NPWT pump</td><td class="note">purchase or rental fleet + charger/case</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">NPWT foam / gauze fillers</td><td class="note">black PU / white PVA</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">NPWT drapes, tubing, connectors</td><td class="note">seal &amp; bridge kit</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">NPWT canisters</td><td class="note">with / without gel</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Single-use NPWT (PICO)</td><td class="note">ambulatory / lower-exudate patients</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 11 -->
+  <section class="cat">
+    <h2><span class="tag">FIX</span><span class="nm">Secondary Dressings &amp; Fixation</span><span class="ct">7 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Conforming / rolled gauze bandage</span></td><td class="note">Kling — various widths</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Tubular retention bandage</td><td class="note">Tubifast / Tubigrip — sized by limb</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Cohesive bandage (Coban)</td><td class="note">non-adhesive self-adherent</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Silicone tape (Mepitac)</span></td><td class="note">fragile / at-risk skin</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Paper tape (Micropore)</span></td><td class="note">general fixation</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Cloth / transpore tape</td><td class="note">secure fixation</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Wool / cast padding</td><td class="note">limb protection under wraps</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 12 -->
+  <section class="cat">
+    <h2><span class="tag">COMPRESS</span><span class="nm">Compression Therapy <span style="font-weight:600;color:var(--amber)">— ABI first</span></span><span class="ct">5 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">2-layer compression kit</td><td class="note">Coban 2 — after ABI clears</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">4-layer compression kit</td><td class="note">Profore — venous ulcers</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Short-stretch bandage</td><td class="note">mixed aetiology / lymphoedema</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Compression stockings + donning aid</td><td class="note">Class 1 / 2 / 3</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Toe / foot bandages</td><td class="note">lymphoedema</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 13 -->
+  <section class="cat">
+    <h2><span class="tag">OFFLOAD</span><span class="nm">Offloading &amp; Pressure Redistribution</span><span class="ct">6 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Offloading boot / cast walker</td><td class="note">DFU — buy or referral pathway</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Heel-protector boots / elbow pads</td><td class="note">pressure prevention</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Adhesive / felted foam padding</td><td class="note">offloading pressure points</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Pressure-redistribution mattress / overlay</td><td class="note">air / foam — rent or per patient</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Positioning wedges / gel cushions</td><td class="note">seated &amp; bed positioning</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Sheepskin / heel floats</td><td class="note">friction / shear reduction</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 14 -->
+  <section class="cat">
+    <h2><span class="tag">SKIN</span><span class="nm">Periwound &amp; Skin Care</span><span class="ct">6 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">No-sting barrier film (Cavilon)</span></td><td class="note">wipes + spray — periwound protection</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Barrier cream (zinc / dimethicone)</td><td class="note">IAD / moisture damage</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Medical emollient / moisturiser</td><td class="note">dry, at-risk skin</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Silicone adhesive remover</span></td><td class="note">sting-free — protects fragile skin</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Incontinence cleanser + wipes</td><td class="note">MASD prevention</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Briefs / incontinence pads</td><td class="note">moisture control</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 15 -->
+  <section class="cat">
+    <h2><span class="tag">RX·BAG</span><span class="nm">Topical Agents &amp; Med Bag</span><span class="ct">7 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Topical antibiotic<span class="rx">ORDER-BACKED</span></td><td class="note">mupirocin / fusidic acid — per order</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Local anaesthetic gel / spray<span class="rx">ORDER-BACKED</span></td><td class="note">lidocaine — painful debridement</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Silver nitrate sticks</td><td class="note">hypergranulation</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Haemostatic agent</td><td class="note">minor post-debridement bleeding</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">White soft paraffin / petroleum jelly</td><td class="note">skin protection</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">High-protein / arginine oral supplement</td><td class="note">nutrition — MST-driven</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Emergency kit</td><td class="note">glucose, adrenaline pathway, first aid</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 16 -->
+  <section class="cat">
+    <h2><span class="tag">LAB</span><span class="nm">Specimen &amp; Point-of-Care Diagnostics</span><span class="ct">6 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Wound culture swabs</span></td><td class="note">aerobic/anaerobic — Levine technique</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Sterile specimen containers</td><td class="note">+ biohazard transport bags</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Blood draw kit</td><td class="note">vacutainers, needles, tourniquet, holders</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Tissue biopsy / punch kit<span class="rx">ORDER-BACKED</span></td><td class="note">if within scope</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Urine dipsticks</td><td class="note">screening</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">HbA1c / CRP POC (optional)</td><td class="note">glycaemic &amp; infection markers</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 17 -->
+  <section class="cat">
+    <h2><span class="tag">PPE</span><span class="nm">PPE &amp; Infection Control</span><span class="ct">7 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Exam gloves (nitrile)</span></td><td class="note">highest-volume consumable — S/M/L</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Disposable aprons / gowns</span></td><td class="note">fluid-resistant + a few sterile gowns</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Surgical masks</span></td><td class="note">standard precautions</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">N95 / FFP2 respirators</td><td class="note">select cases</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Eye protection / face shields</td><td class="note">splash risk</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Alcohol hand rub</span></td><td class="note">multiple bottles per bag</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Surface disinfectant wipes / spray</td><td class="note">clean work surface each home</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 18 -->
+  <section class="cat">
+    <h2><span class="tag">WASTE</span><span class="nm">Sharps &amp; Clinical Waste</span><span class="ct">5 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Portable sharps containers</span></td><td class="note">small for bag + larger transport bin</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Clinical waste bags (yellow) + ties</span></td><td class="note">soiled dressings</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Leak-proof transport container</td><td class="note">soiled waste home → base</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Body-fluid spill kit</td><td class="note">absorbent + disinfectant</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Waste-collection contract</td><td class="note"><b>legal requirement</b> — licensed carrier</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 19 -->
+  <section class="cat">
+    <h2><span class="tag">BAG</span><span class="nm">Nurse's Bag &amp; General Kit</span><span class="ct">8 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Wipeable nursing bag</span></td><td class="note">clean/dirty compartments + fold-out barrier</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Bandage scissors + trauma shears</span></td><td class="note">tuff-cut</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Tweezers / Kelly forceps</td><td class="note">general handling</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Penlight + headlamp</span></td><td class="note">home lighting is often poor</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Stethoscope</td><td class="note">assessment</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Skin marker / surgical pen</td><td class="note">margins, tunnelling reference</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Timer</td><td class="note">contact-layer / soak times</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Zip-lock bags, labels, markers</td><td class="note">specimen &amp; supply organisation</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 20 -->
+  <section class="cat">
+    <h2><span class="tag">LOGISTIC</span><span class="nm">Cold Chain, Storage &amp; Documentation</span><span class="ct">7 lines</span></h2>
+    <table>
+      <thead><tr><th class="chk">Have</th><th class="item">Item</th><th>Sizes / derivatives / notes</th><th class="n">Par</th><th class="n">On&nbsp;hand</th><th class="chk">Order</th></tr></thead>
+      <tbody>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Insulated cooler bag + ice packs</td><td class="note">temperature-sensitive items</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Base fridge + thermometer &amp; log</td><td class="note">cold-chain compliance</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Labelled bin shelving (FEFO)</td><td class="note">first-expiry-first-out rotation</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Vehicle organiser / field caddy</td><td class="note">stock in transit</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item"><span class="core">Tablet / phone running CuraNova</span></td><td class="note">assessment, photos, patient log</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Consent + wound-order + care-plan forms</td><td class="note">incl. photo consent</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+        <tr><td class="chk"><span class="box"></span></td><td class="item">Label printer</td><td class="note">specimen / med labels</td><td class="n"><span class="writ"></span></td><td class="n"><span class="writ"></span></td><td class="chk"><span class="box"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="notes">
+    <h3>How to use this sheet — 5 field rules</h3>
+    <ul>
+      <li><b>Category over brand.</b> Stock each category, then one or two brands. Don't buy one of everything — it expires before it's used.</li>
+      <li><b>Core-bag items (●)</b> are the ~80%-of-visits kit. Restock these to par after <em>every</em> shift; everything else weekly.</li>
+      <li><b><span style="color:var(--amber)">Order-backed</span> items</b> (debriders, antibiotics, sharps, biologics, anaesthetic) are stocked <em>only</em> against a physician order or standing protocol.</li>
+      <li><b>ABI before compression, always.</b> No compression kit leaves the bag for a new leg ulcer until the ankle-brachial index clears it.</li>
+      <li><b>Let the data forecast.</b> High-exudate wounds burn foams &amp; superabsorbents; infected wounds burn antimicrobials. Use CuraNova's exudate/infection scores to set reorder volume, and localise brand names to what your market actually carries.</li>
+    </ul>
+  </div>
+
+  <footer>CuraNova · Home Nursing — Advanced Wound Care · Supply &amp; Equipment Master Checklist · adapt par levels to caseload</footer>
+
+</div>
+
+<script>
+  function toggleTheme(){
+    var r=document.documentElement;
+    var cur=r.getAttribute('data-theme');
+    if(!cur){ cur = matchMedia('(prefers-color-scheme:dark)').matches ? 'dark':'light'; }
+    r.setAttribute('data-theme', cur==='dark'?'light':'dark');
+  }
+</script>
