@@ -2349,7 +2349,7 @@ function applyRole(){
   let pb=document.getElementById('portalBanner');
   if(phys){
     if(!pb){ pb=document.createElement('div'); pb.id='portalBanner'; pb.className='callout info no-print-log'; pb.style.margin='0 0 4px'; tools.log.prepend(pb); }
-    pb.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg><span><b>Physician Portal</b> — read-only view of patients referred to <b>${esc(physicianName||currentUser)}</b>. Contact the nursing team to update a plan.</span>`;
+    pb.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg><span style="flex:1"><b>Physician Portal</b> — read-only view of patients referred to <b>${esc(physicianName||currentUser)}</b>. Contact the nursing team to update a plan.</span><button class="btn btn-ghost" style="flex:none;align-self:center;white-space:nowrap" onclick="cloudSignOut()">Sign out</button>`;
     pb.style.display='';
   } else if(pb){ pb.style.display='none'; }
 }
