@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.curanova.twa",
+      "sha256_cert_fingerprints": [
+        "55:24:3D:E3:7A:22:18:BB:14:41:9D:B2:38:E3:74:2B:75:43:7E:35:7E:70:E6:F9:9D:E0:12:EF:71:79:A6:A1"
+      ]
+    }
+  }
+]
