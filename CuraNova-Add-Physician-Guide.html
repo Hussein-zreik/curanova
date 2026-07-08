@@ -71,6 +71,14 @@
   .mini ul{margin:0;padding-left:16px}
   .mini .m{color:var(--muted)}
 
+  .tmpl{background:var(--paper);border:1.6px solid var(--teal);border-radius:14px;padding:16px 18px;margin-top:14px;
+    box-shadow:0 2px 8px rgba(13,148,136,.10);break-inside:avoid;page-break-inside:avoid;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .tmpl-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .tmpl-h .tag{background:var(--teal-deep)}
+  .tmpl-h h2{margin:0;font-size:16px;font-weight:800;letter-spacing:-.01em;color:var(--navy)}
+  .tmpl>p{font-size:12.5px;margin:9px 0 0}
+
   footer{margin-top:18px;text-align:center;font-size:10.5px;color:var(--muted)}
 
   @media print{
@@ -159,6 +167,25 @@ where u.email = '<span class="hi">doctor@email.com</span>';</pre>
       </ul>
       <div class="call ok"><span class="ic">✅</span><span>They open the link, enter their email and password, and they're in — seeing only their own patients, read-only. If they were already signed in, they should <b>sign out and back in</b> once.</span></div>
     </div>
+  </div>
+
+  <!-- COPY TEMPLATE -->
+  <div class="tmpl">
+    <div class="tmpl-h"><span class="tag">Copy this</span><h2>📋 The exact text to add — for every new doctor</h2></div>
+    <p>For each new doctor, open a <b>+ New query</b>, paste this whole block, change only the <b style="color:var(--teal-deep)">3 highlighted values</b>, then click <b>Run</b>:</p>
+<pre>insert into profiles (id, role, physician_name, full_name)
+select id, 'physician', '<span class="hi">Haddad</span>', '<span class="hi">Dr. Elie Haddad</span>'
+from auth.users
+where email = '<span class="hi">doctor@email.com</span>'
+on conflict (id) do update
+  set role = excluded.role,
+      physician_name = excluded.physician_name,
+      full_name = excluded.full_name;</pre>
+    <ul class="change">
+      <li><span class="k">doctor@email.com</span><span>→ the new doctor's email (the one you made in Step 1).</span></li>
+      <li><span class="k">Haddad</span><span>→ the doctor's name <b>exactly as nurses type it</b> in "Referring physician".</span></li>
+      <li><span class="k">Dr. Elie Haddad</span><span>→ the doctor's full name shown on screen.</span></li>
+    </ul>
   </div>
 
   <!-- BOTTOM -->
