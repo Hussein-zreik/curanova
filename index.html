@@ -324,20 +324,36 @@
   .s-crit{background:var(--high)}.s-warn{background:var(--mod)}.s-good{background:var(--ok)}.s-info{background:var(--muted)}
 
   /* ---------- secure access gate + cloud status ---------- */
-  .lock{position:fixed;inset:0;z-index:100;background:linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 60%,#134B5E 100%);
+  .lock{position:fixed;inset:0;z-index:100;overflow:hidden;
+    background:radial-gradient(1100px 560px at 50% -12%, #17546F 0%, transparent 60%),
+               linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 58%,#0E3A4C 100%);
     display:none;place-items:center;padding:20px}
   .lock.show{display:grid}
-  .lock-card{background:#fff;border-radius:18px;max-width:380px;width:100%;padding:30px 28px;text-align:center;box-shadow:var(--shadow-lg)}
-  .lock-card .mark{width:56px;height:56px;border-radius:15px;background:#fff;border:1px solid var(--line);overflow:hidden;
-    display:grid;place-items:center;margin:0 auto 16px;box-shadow:0 6px 18px rgba(11,42,67,.12)}
-  .lock-card .mark svg{width:30px;height:30px}
-  .lock-card h2{font-size:19px;font-weight:800;color:var(--navy)}
-  .lock-card p{font-size:13px;color:var(--muted);margin:8px 0 18px;line-height:1.5}
-  .lock-card input{width:100%;text-align:center;font-size:16px;letter-spacing:.04em;padding:12px;margin-bottom:10px}
-  .lock-card .btn{width:100%;justify-content:center;padding:13px}
+  .lock::after{content:"";position:absolute;width:520px;height:520px;right:-170px;bottom:-170px;pointer-events:none;
+    background:radial-gradient(circle,rgba(20,184,166,.22),transparent 62%)}
+  .lock::before{content:"";position:absolute;width:420px;height:420px;left:-150px;top:-130px;pointer-events:none;
+    background:radial-gradient(circle,rgba(20,184,166,.12),transparent 60%)}
+  .lock-card{position:relative;z-index:2;background:#fff;border-radius:22px;max-width:392px;width:100%;
+    padding:34px 30px 24px;text-align:center;overflow:hidden;
+    box-shadow:0 30px 70px rgba(6,26,43,.45)}
+  .lock-card::before{content:"";position:absolute;top:0;left:0;right:0;height:5px;
+    background:linear-gradient(90deg,var(--teal-2),var(--teal) 58%,var(--navy));
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .lock-card .mark{width:64px;height:64px;border-radius:17px;background:#fff;border:1px solid var(--line);overflow:hidden;
+    display:grid;place-items:center;margin:6px auto 12px;box-shadow:0 10px 24px rgba(11,42,67,.16)}
+  .lock-card .mark svg{width:34px;height:34px}
+  .lock-tagline{font-family:'Plus Jakarta Sans';font-size:10px;font-weight:700;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--teal);margin:0 0 14px}
+  .lock-card h2{font-size:20px;font-weight:800;color:var(--navy);letter-spacing:-.02em}
+  .lock-card p{font-size:13px;color:var(--muted);margin:11px 0 18px;line-height:1.55}
+  .lock-card input{width:100%;text-align:center;font-size:16px;letter-spacing:.04em;padding:13px;margin-bottom:10px;
+    border:1.5px solid var(--line);border-radius:12px;transition:border-color .15s,box-shadow .15s}
+  .lock-card input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,148,136,.16)}
+  .lock-card .btn{width:100%;justify-content:center;padding:14px;border-radius:12px;font-size:14.5px}
   .lock-err{color:var(--high);font-size:12.5px;min-height:16px;margin-bottom:8px;font-weight:600}
-  .lock-foot{font-size:11px;color:var(--muted-2);margin-top:16px;line-height:1.9}
-  .lock-offline{color:var(--teal);cursor:pointer;font-weight:600;text-decoration:none}
+  .lock-foot{font-size:11.5px;color:var(--muted-2);margin-top:18px;line-height:2;
+    border-top:1px solid var(--line);padding-top:14px}
+  .lock-offline{color:var(--teal);cursor:pointer;font-weight:700;text-decoration:none}
   .lock-offline:hover{text-decoration:underline}
   .cloud-chip{font-size:11px;font-weight:700;font-family:'Plus Jakarta Sans';padding:3px 10px;border-radius:20px;
     background:var(--ok-bg);color:var(--ok);display:inline-flex;gap:5px;align-items:center;white-space:nowrap}
@@ -457,6 +473,56 @@
   .del-visit{margin-top:12px;font-size:12px;color:var(--high);background:none;border:0;cursor:pointer;
     font-weight:600;padding:6px 0}
   .del-visit:hover{text-decoration:underline}
+
+  /* full-width free-text notes */
+  .vnote{grid-column:1/-1;padding:4px 0 8px;border-bottom:1px dashed var(--border-2)}
+  .vnote .vk{display:block;color:var(--muted);font-size:12.5px;margin-bottom:3px}
+  .vnote .vv-long{white-space:pre-wrap;color:var(--ink);font-weight:500;font-size:12.5px;line-height:1.55}
+
+  /* per-visit print/delete controls in the header */
+  .visit-h .v-pick{display:flex;align-items:center;flex:none;margin-right:2px}
+  .visit-h .v-pick input{width:16px;height:16px;accent-color:var(--teal);cursor:pointer}
+  .v-actions{display:flex;gap:2px;flex:none;align-items:center}
+  .v-iconbtn{appearance:none;border:0;background:none;cursor:pointer;color:var(--muted-2);border-radius:8px;
+    width:30px;height:30px;display:grid;place-items:center}
+  .v-iconbtn svg{width:16px;height:16px}
+  .v-iconbtn:hover{background:var(--canvas-2);color:var(--navy)}
+  .v-iconbtn.v-del:hover{background:#FDECEC;color:var(--high)}
+
+  /* patient-detail action bar */
+  .detail-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .detail-actions .da-print{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .btn.btn-sm{padding:8px 11px;font-size:12.5px}
+  .btn-danger-ghost{background:none;border:1.5px solid #F3C9C9;color:var(--high)}
+  .btn-danger-ghost:hover{background:#FDECEC}
+
+  /* printed report cover — print only */
+  .report-cover{display:none}
+  @media print{
+    .report-cover{display:block;break-inside:avoid;margin-bottom:14px}
+    body.viewing-record .print-head,
+    body.viewing-record .log-print-head{display:none!important}
+    .pt-report .panel{break-inside:auto;border:0!important;box-shadow:none!important;margin:0!important;padding:0!important}
+    .pt-report .panel-b{padding:0!important}
+    .pt-report .visit-b{display:block!important}
+    .pt-report .chev,.pt-report .v-pick,.pt-report .v-actions{display:none!important}
+    .visit{break-inside:avoid}
+    .visit.print-omit,.traj-wrap.print-omit{display:none!important}
+    .report-cover .rc-top{display:flex;align-items:center;justify-content:space-between;
+      border-bottom:2px solid var(--navy);padding-bottom:10px;margin-bottom:12px}
+    .report-cover .rc-brand{display:flex;align-items:center;gap:10px}
+    .report-cover .rc-mark{width:34px;height:34px;border-radius:8px;overflow:hidden;border:1px solid #ccc;display:grid;place-items:center}
+    .report-cover .rc-mark img{width:100%;height:100%;object-fit:contain}
+    .report-cover .rc-nm{font-family:'Plus Jakarta Sans';font-weight:800;font-size:16px;color:var(--navy);display:block;line-height:1.1}
+    .report-cover .rc-tag{font-size:9.5px;color:#666;display:block}
+    .report-cover .rc-doc{font-family:'Plus Jakarta Sans';font-weight:800;font-size:13px;color:var(--navy);text-transform:uppercase;letter-spacing:.04em}
+    .report-cover .rc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 18px;margin-bottom:10px}
+    .report-cover .rc-cell{display:flex;flex-direction:column;border-bottom:1px solid #e5e5e5;padding-bottom:4px}
+    .report-cover .rc-cell span{font-size:9px;color:#777;text-transform:uppercase;letter-spacing:.04em}
+    .report-cover .rc-cell b{font-size:12px;color:var(--ink)}
+    .report-cover .rc-summary{font-size:11.5px;color:var(--ink);background:#EFF6F5;border-radius:8px;padding:8px 10px;margin-bottom:10px}
+    .report-cover .rc-sign{font-size:10px;color:#555;margin-top:6px}
+  }
 
   .toast{position:fixed;left:50%;bottom:80px;transform:translate(-50%,20px);z-index:60;background:var(--navy);
     color:#fff;padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:600;font-family:'Plus Jakarta Sans';
@@ -1316,6 +1382,7 @@
 <div class="lock" id="lockScreen">
   <div class="lock-card">
     <div class="mark"><img src="logo-tile.png" alt="CuraNova" class="cn-logo"></div>
+    <div class="lock-tagline">Home Nursing · Advanced Wound Care</div>
 
     <!-- sign in -->
     <div id="lockSignin">
@@ -1730,7 +1797,7 @@ function captureTool(toolKey){
       if(!ctrl||ctrl.type==='radio'||ctrl.type==='checkbox'||ctrl.type==='file')return;
       let val=(ctrl.value||'').trim();if(!val)return;
       const u=f.querySelector('.u');if(u)val+=' '+u.textContent.trim();
-      items.push({label:labelText(f.querySelector('label')),value:val});
+      items.push({label:labelText(f.querySelector('label')),value:val,long:ctrl.tagName==='TEXTAREA'});
     });
     // pill radio groups (class / stage / infection severity)
     panel.querySelectorAll('.pills').forEach(p=>{
@@ -1906,7 +1973,11 @@ function visitHTML(v){
   let body='';
   (v.sections||[]).forEach(sec=>{if(!sec.items||!sec.items.length)return;
     body+=`<div class="vsec">${esc(sec.title)}</div>`;
-    sec.items.forEach(it=>{body+=`<div class="vrow"><span class="vk">${esc(it.label)}</span><span class="vv">${esc(it.value)}</span></div>`;});
+    sec.items.forEach(it=>{
+      const longField = it.long || /notes|plan|education|summary/i.test(it.label||'') || String(it.value).includes('\n') || String(it.value).length>90;
+      if(longField) body+=`<div class="vnote"><span class="vk">${esc(it.label)}</span><div class="vv-long">${esc(it.value)}</div></div>`;
+      else body+=`<div class="vrow"><span class="vk">${esc(it.label)}</span><span class="vv">${esc(it.value)}</span></div>`;
+    });
   });
   if(!body)body='<div class="vrow"><span class="vv">No structured fields recorded.</span></div>';
   const al=v.alerts||[];
@@ -1920,43 +1991,109 @@ function visitHTML(v){
   if(warn)badges+=`<span class="vbadge b-warn">${warn} warning</span>`;
   const sc=v.score||{};
   const scoreLine=(sc.num&&sc.num!=='–')?`<div class="vh-score">${esc(sc.num)}<small>${esc((sc.label||'').replace(/ score$/,''))}</small></div>`:'';
-  return `<div class="visit"><div class="visit-h" onclick="this.parentElement.classList.toggle('open')">
+  const canEdit = userRole!=='physician';
+  const vActions = `<div class="v-actions no-print-log" onclick="event.stopPropagation()">
+      <button class="v-iconbtn" title="Print this visit" onclick="event.stopPropagation();printVisit('${escAttr(v.id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-4a2 2 0 012-2h16a2 2 0 012 2v4a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg></button>
+      ${canEdit?`<button class="v-iconbtn v-del" title="Delete this visit" onclick="event.stopPropagation();deleteVisit('${escAttr(v.id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>`:''}
+    </div>`;
+  return `<div class="visit" data-vid="${escAttr(v.id)}"><div class="visit-h" onclick="this.parentElement.classList.toggle('open')">
+    <label class="v-pick no-print-log" title="Include in printout" onclick="event.stopPropagation()"><input type="checkbox" class="v-inc" checked onclick="event.stopPropagation()"></label>
     <span class="vt ${cls}">${tlabel}</span>
     <div class="vh-main"><div class="vh-title">${esc(v.toolTitle)}${v.visitNo?` · Visit ${esc(v.visitNo)}`:''}</div>
       <div class="vh-sub">${esc(v.date||fmtDate(v.savedAt))}${v.nurse?` · ${esc(v.nurse)}`:''}${typeof v.area==='number'?` · ${v.area} cm²`:''}${v.bwat!=null?` · BWAT ${v.bwat}`:''}</div>
       ${badges?`<div class="vbadges" style="margin-top:4px">${badges}</div>`:''}</div>
-    ${scoreLine}<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
-    <div class="visit-b"><div class="vgrid">${alertsHTML}${body}</div>${userRole==='physician'?'':`<button class="del-visit" onclick="deleteVisit('${v.id}')">Delete this visit</button>`}</div></div>`;
+    ${scoreLine}${vActions}<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
+    <div class="visit-b"><div class="vgrid">${alertsHTML}${body}</div></div></div>`;
 }
 function openPatient(mrn){
   const p=getPatients()[mrn];if(!p)return;openMrn=mrn;
+  document.body.classList.add('viewing-record');
   document.getElementById('logList').style.display='none';
   document.querySelector('#tool-log .panel.no-print-log').style.display='none';
   const d=document.getElementById('logDetail');d.style.display='';
   const md=p.visits.filter(v=>v.physician)[0];
-  d.innerHTML=`<div class="panel"><div class="panel-b">
-    <div class="no-print-log" style="display:flex;gap:8px;margin-bottom:16px">
-      <button class="btn btn-ghost" onclick="closePatient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg><span>Back to list</span></button>
-      <button class="btn btn-primary" style="margin-left:auto" onclick="printPatient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-4a2 2 0 012-2h16a2 2 0 012 2v4a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg><span>Print / Save PDF</span></button>
+  const canEdit = userRole!=='physician';
+  d.innerHTML=`<div class="pt-report"><div class="panel"><div class="panel-b">
+    <div class="no-print-log detail-actions">
+      <button class="btn btn-ghost" onclick="closePatient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg><span>Back</span></button>
+      ${canEdit?`<button class="btn btn-danger-ghost" onclick="deletePatient('${escAttr(p.mrn)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg><span>Delete record</span></button>`:''}
+      <span class="da-print">
+        <button class="btn btn-ghost btn-sm" onclick="setVisitPicks(true)">All</button>
+        <button class="btn btn-ghost btn-sm" onclick="setVisitPicks(false)">None</button>
+        <button class="btn btn-ghost" onclick="printSelected()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-4a2 2 0 012-2h16a2 2 0 012 2v4a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg><span>Print selected</span></button>
+        <button class="btn btn-primary" onclick="printPatient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-4a2 2 0 012-2h16a2 2 0 012 2v4a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg><span>Print all</span></button>
+      </span>
     </div>
+    ${reportCover(p,md)}
     <div class="pt-head"><div class="av">${esc(initials(p.name))}</div>
       <div><h3 class="jakarta">${esc(p.name||'(unnamed)')}</h3>
         <div class="ph-meta"><span class="mono">MRN ${esc(p.mrn)}</span>${p.dob?`<span>DOB <b>${esc(p.dob)}</b></span>`:''}<span><b>${p.visits.length}</b> visit${p.visits.length!==1?'s':''}</span>${md?`<span>Referring: <b>${esc(md.physician)}</b></span>`:''}</div></div></div>
     ${patientAssessmentLine(p)}
     ${signoffSection(p)}
-    ${trajectoryHTML(p)}
+    <div class="traj-wrap">${trajectoryHTML(p)}</div>
     ${[...p.visits].reverse().map(visitHTML).join('')}
-  </div></div>`;
+  </div></div></div>`;
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function closePatient(){
   openMrn=null;
+  document.body.classList.remove('viewing-record');
+  clearPrintOmit();
   document.getElementById('logDetail').style.display='none';
   document.getElementById('logList').style.display='';
   document.querySelectorAll('#tool-log .panel.no-print-log,#dashPanel').forEach(x=>x.style.display='');
   renderLog();
 }
-function printPatient(){ if(openMrn)audit('print',`MRN ${openMrn}`); window.print(); }
+function coverSummary(p){
+  const items=Object.values(groupWounds(p)).map(assessWound); if(!items.length) return '';
+  const counts={}; items.forEach(a=>counts[a.chip]=(counts[a.chip]||0)+1);
+  const summary=Object.entries(counts).map(([k,v])=>`${v} ${k.toLowerCase()}`).join(' · ');
+  return `${items.length} wound${items.length!==1?'s':''} on record — ${summary}.`;
+}
+function reportCover(p,md){
+  const rows=[
+    ['Patient', esc(p.name||'(unnamed)')],
+    ['File / MRN', esc(p.mrn)],
+    ['Date of birth', esc(p.dob||'—')],
+    ['Referring physician', md?esc(md.physician):'—'],
+    ['Visits on record', String((p.visits||[]).length)],
+    ['Report generated', esc(fmtDate(new Date()))]
+  ].map(([k,v])=>`<div class="rc-cell"><span>${k}</span><b>${v}</b></div>`).join('');
+  const sum=coverSummary(p);
+  return `<div class="report-cover">
+    <div class="rc-top">
+      <div class="rc-brand"><span class="rc-mark"><img src="logo-tile.png" alt="CuraNova" class="cn-logo"></span>
+        <span class="rc-words"><span class="rc-nm">CuraNova</span><span class="rc-tag">Home Nursing · Advanced Wound Care</span></span></div>
+      <div class="rc-doc">Patient Wound Record</div>
+    </div>
+    <div class="rc-grid">${rows}</div>
+    ${sum?`<div class="rc-summary"><b>Clinical summary:</b> ${esc(sum)}</div>`:''}
+    <div class="rc-sign">Reviewing clinician: __________________________ &nbsp;·&nbsp; Signature: __________________ &nbsp;·&nbsp; Date: ____________</div>
+  </div>`;
+}
+function setVisitPicks(on){ document.querySelectorAll('#logDetail .v-inc').forEach(c=>{c.checked=on;}); }
+function clearPrintOmit(){ document.querySelectorAll('.print-omit').forEach(e=>e.classList.remove('print-omit')); }
+function markOmit(keepFn){
+  clearPrintOmit();
+  let kept=0;
+  document.querySelectorAll('#logDetail .visit').forEach(v=>{ if(keepFn(v))kept++; else v.classList.add('print-omit'); });
+  const tr=document.querySelector('#logDetail .traj-wrap');
+  if(tr){ if(kept<2)tr.classList.add('print-omit'); else tr.classList.remove('print-omit'); }
+  return kept;
+}
+function printPatient(){ if(openMrn)audit('print',`MRN ${openMrn} · all`); clearPrintOmit(); window.print(); }
+function printSelected(){
+  const kept=markOmit(v=>{const c=v.querySelector('.v-inc');return !c||c.checked;});
+  if(!kept){ toast('Tick at least one visit to print',true); clearPrintOmit(); return; }
+  if(openMrn)audit('print',`MRN ${openMrn} · ${kept} selected`);
+  window.print();
+}
+function printVisit(vid){
+  markOmit(v=>v.dataset.vid===vid);
+  if(openMrn)audit('print',`MRN ${openMrn} · visit ${vid}`);
+  window.print();
+}
+window.addEventListener('afterprint',clearPrintOmit);
 
 /* ---- physician sign-off (append-only oversight record) ---- */
 function getSignoffs(){return loadJSON('curanova_signoffs',{});}
@@ -2006,6 +2143,18 @@ function deleteVisit(vid){
   audit('delete-visit',`MRN ${mrn} · visit ${vid}`);
   toast('Visit deleted');
   if(patients[mrn])openPatient(mrn);else closePatient();
+}
+function deletePatient(mrn){
+  if(userRole==='physician')return;
+  const patients=getPatients();const p=patients[mrn];if(!p)return;
+  const n=(p.visits||[]).length;
+  if(!confirm(`Delete the ENTIRE record for ${p.name||'this patient'} (MRN ${mrn})?\n\nAll ${n} visit${n!==1?'s':''} will be permanently removed. This cannot be undone.`))return;
+  delete patients[mrn];
+  saveJSON('curanova_patients',patients);
+  cloudDeletePatient(mrn);
+  audit('delete-patient',`MRN ${mrn} · ${n} visit(s)`);
+  toast('Patient record deleted');
+  closePatient();
 }
 document.addEventListener('click',e=>{const card=e.target.closest('.pt-card');if(card)openPatient(card.dataset.mrn);});
 document.addEventListener('click',e=>{const im=e.target.closest('.photo-strip img,.vimg-grid img');if(im&&im.src){document.getElementById('lightboxImg').src=im.src;document.getElementById('lightbox').classList.add('show');}});
