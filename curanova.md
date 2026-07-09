@@ -1,7 +1,7 @@
 # CuraNova — Project Handoff
 
 > Single-source context for continuing work in a fresh session. Read this first.
-> Last updated: session of 2026-07 (wound-assessment tool, portal, deliverables, APK prep).
+> Last updated: session of 2026-07-09 (WhatsApp physician summary). Earlier: wound-assessment tool, portal, deliverables, APK prep.
 
 ---
 
@@ -18,7 +18,7 @@ A **home-nursing advanced wound-care tool** for a small nursing team and their r
 ## 2. Where it lives
 - **Repo:** `hussein-zreik/curanova` (GitHub). Owner login casing: `Hussein-zreik`.
 - **Live site (GitHub Pages, serves `main`):** https://hussein-zreik.github.io/curanova/
-- **Working branch (do all dev here):** `claude/project-file-review-awswjy`
+- **Working branch:** whichever `claude/...` branch the current session assigns (latest: `claude/curanova-md-session-i2y0ag`; earlier work on `claude/project-file-review-awswjy`). Deploy flow below applies regardless of the dev branch name.
 - **Pages workflow id:** `306528249` (name: "pages build and deployment", path `dynamic/pages/pages-build-deployment`).
 
 ---
@@ -64,6 +64,7 @@ Notes:
   - Auth/roles: `cloudInit`, `onAuthed` (reads `profiles` → `userRole`/`physicianName`), `applyRole`, `updateCloudBadge`, `cloudSignOut`.
   - Password reset: `showResetView`, `showSigninView`, `openNewPw`, `sendReset`, `saveNewPassword` (+ `onAuthStateChange` PASSWORD_RECOVERY handling in `cloudInit`).
   - Merge/sync: `mergePatient`, `cloudPull`, `pushPatientMerged`, `flushQueue`, `queueOp`, `cloudUpsertPatient`, `cloudDeletePatient`.
+  - WhatsApp physician summary: `waSummary(p,visit)` (plaintext WA-markdown message), `sendWA(mrn,vid)` (wa.me deep link; contact-picker fallback), `normPhone`/`getPhysPhone`/`setPhysPhone`/`promptPhysPhone` (directory), `showSendBanner`/`dismissSendBanner` (after-save prompt), `editPhysNumber` (detail-actions "Dr. number" button).
 
 ---
 
@@ -102,6 +103,13 @@ Notes:
   - Printed report: **professional cover page** (brand, patient identity grid, report date, clinical summary, signature line) replacing the old near-empty first page; content now flows from page 1 (overrode the single-`.panel` `break-inside:avoid`). **Clinical notes print full-width with line breaks preserved** (`white-space:pre-wrap`), not a cramped half-column.
   - Printing: per-visit **"Print this visit"**, include **checkboxes** + **All/None** + **"Print selected"** (unselected visits and the trend table are omitted); **"Print all"** unchanged.
 
+**WhatsApp physician summary (session 2026-07-09)**
+- After a nurse saves an assessment with a referring physician set, a green banner offers **"Send summary via WhatsApp"**; the patient log also has a per-visit WhatsApp icon (next to print) and a **"Dr. number"** button in the detail action bar. All nurse-only (`canEdit`), `no-print-log`.
+- The message (`waSummary`) is WhatsApp-formatted plaintext: patient full name + MRN (user's explicit choice), wound/visit line, headline score + interpretation, size L×W×D + area + Δ vs last visit, whole-wound trend (baseline → latest, ⬇% , `assessWound` status), crit/warn alerts, next visit + nurse, portal link.
+- Delivery = `https://wa.me/<number>?text=<encoded>` (nurse reviews in WhatsApp and presses send); if no stored number and the prompt is cancelled, falls back to `https://api.whatsapp.com/send?text=` (WhatsApp contact picker). No backend/Business API by design.
+- Physician numbers live in `curanova_lists.physicianPhones` (map: lowercased name → intl digits), syncs via the existing `app_lists` flow. `cloudPull`'s list-union was made object-safe (arrays union; maps merge, local wins). First send prompts once for the number, then remembers.
+- Verified end-to-end with Playwright (37 checks: message content, URL building, number persistence, role gating, banner flow, list regressions).
+
 **Android APK (prepared, not yet built)**
 - Can't compile here (`dl.google.com` blocked). Plan: build with **PWABuilder** (server-side) from the live URL.
 - Already done on our side: generated signing keystore `curanova-signing.keystore` (sent to user), published `.well-known/assetlinks.json` with its SHA-256 fingerprint for package `app.curanova.twa`, added `.nojekyll`.
@@ -134,7 +142,8 @@ Notes:
 - Shared team login: `team@curanova.app`. Physician test account: `zreik111@gmail.com`.
 - WhatsApp contact on marketing pieces: **+961 79 093 599** (`wa.me/96179093599`).
 - Android package id: `app.curanova.twa`; keystore alias `curanova`, store/key password `CuraNova2026`, SHA-256 in `.well-known/assetlinks.json`.
-- Brand colors: navy `#0B2A43`, teal `#0D9488` / `#14B8A6`.
+- Brand colors: navy `#0B2A43`, teal `#0D9488` / `#14B8A6`. WhatsApp accents in-app: `#25D366`.
+- Physician WhatsApp directory: `curanova_lists.physicianPhones` (name lowercased → digits, e.g. `"haddad" → "96179093599"`); editable via the "Dr. number" button on a patient record.
 
 ---
 
