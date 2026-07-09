@@ -593,11 +593,12 @@
   .traj-tbl td:first-child,.traj-tbl th:first-child{text-align:left}
   .traj-tbl .up{color:var(--high);font-weight:600}.traj-tbl .down{color:var(--ok);font-weight:600}
 
-  /* alert banner (critical, on save) */
-  .alert-banner{position:fixed;left:50%;bottom:80px;transform:translate(-50%,20px);z-index:60;max-width:560px;
-    width:calc(100% - 32px);background:#fff;border:1px solid #F1C4BE;border-left:5px solid var(--high);
-    border-radius:12px;box-shadow:var(--shadow-lg);padding:14px 16px;opacity:0;pointer-events:none;transition:.25s}
-  .alert-banner.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  /* alert banner (critical, on save) + WhatsApp send banner — stacked above the dock */
+  .banner-stack{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);z-index:60;max-width:560px;
+    width:calc(100% - 32px);display:flex;flex-direction:column;gap:10px;pointer-events:none}
+  .alert-banner{position:relative;background:#fff;border:1px solid #F1C4BE;border-left:5px solid var(--high);
+    border-radius:12px;box-shadow:var(--shadow-lg);padding:14px 16px;opacity:0;transform:translateY(20px);transition:.25s;display:none}
+  .alert-banner.show{opacity:1;transform:none;pointer-events:auto;display:block}
   .alert-banner h4{font-size:14px;color:var(--high);display:flex;align-items:center;gap:8px;margin-bottom:7px}
   .alert-banner h4 svg{width:17px;height:17px;stroke:var(--high)}
   .alert-banner ul{margin:0 0 0 4px;padding:0;list-style:none;font-size:12.5px;color:var(--ink);line-height:1.5}
@@ -605,6 +606,13 @@
   .alert-banner li::before{content:"•";position:absolute;left:2px;color:var(--high)}
   .alert-banner .ab-close{position:absolute;top:10px;right:12px;border:0;background:none;font-size:18px;
     color:var(--muted-2);cursor:pointer;line-height:1}
+  /* WhatsApp send-to-physician banner + buttons */
+  .wa-banner{border-color:#BFE3DC;border-left-color:#25D366}
+  .wa-banner h4{color:var(--navy);margin-bottom:9px}
+  .wa-banner h4 svg{stroke:#25D366}
+  .wa-banner .wa-row{display:flex;gap:8px;flex-wrap:wrap}
+  .btn-wa{background:#25D366;color:#fff}.btn-wa:hover{background:#1EBE57;transform:translateY(-1px)}
+  .v-iconbtn.v-wa:hover{background:#E7F9EE;color:#1EBE57}
 
   @media print{
     #cdsPanel .cds-none{display:none}
@@ -1355,7 +1363,10 @@
 <datalist id="dl-sites"></datalist>
 
 <div class="toast" id="toast"></div>
-<div class="alert-banner" id="alertBanner"></div>
+<div class="banner-stack">
+  <div class="alert-banner" id="alertBanner"></div>
+  <div class="alert-banner wa-banner" id="sendBanner"></div>
+</div>
 <div class="lightbox" id="lightbox" onclick="this.classList.remove('show')"><img id="lightboxImg" alt="wound photo enlarged"></div>
 
 <!-- ===== Photo annotation / measurement editor ===== -->
@@ -1715,10 +1726,18 @@ const LIST_DEFAULTS={
   nurses:[], physicians:[],
   specialties:['Vascular surgery','General surgery','Plastic & reconstructive surgery','Orthopedic surgery','Colorectal surgery','Cardiothoracic surgery','Endocrinology','Internal medicine','Infectious disease','Dermatology','Podiatry','Cardiology','Nephrology','Geriatrics','Family medicine','Neurology','Neurosurgery','Urology','OB/GYN','Rheumatology','Wound care / tissue viability'],
   procedures:['Right hemicolectomy','Left hemicolectomy','Sigmoid colectomy','Exploratory laparotomy','Appendectomy','Cholecystectomy','Inguinal hernia repair','Incisional hernia repair','Caesarean section','Total abdominal hysterectomy','Mastectomy','Coronary artery bypass graft (CABG)','Femoral–popliteal bypass','Below-knee amputation (BKA)','Above-knee amputation (AKA)','Transmetatarsal amputation','Toe amputation','Surgical debridement','Incision & drainage','Split-thickness skin graft','Total knee arthroplasty','Total hip arthroplasty','Lumbar spinal fusion','Fasciotomy'],
-  sites:['Midline abdominal','Upper midline','Lower midline','Pfannenstiel','Right subcostal','McBurney (RLQ)','Median sternotomy','Left thoracotomy','Right inguinal','Left inguinal','Groin','Plantar forefoot','Plantar 1st MTH','Plantar 5th MTH','Dorsal foot','Heel','Lateral malleolus','Sacrum','Coccyx','Ischial tuberosity','Greater trochanter','Lower leg (shin)','Calf','Medial thigh','Knee','Hip']
+  sites:['Midline abdominal','Upper midline','Lower midline','Pfannenstiel','Right subcostal','McBurney (RLQ)','Median sternotomy','Left thoracotomy','Right inguinal','Left inguinal','Groin','Plantar forefoot','Plantar 1st MTH','Plantar 5th MTH','Dorsal foot','Heel','Lateral malleolus','Sacrum','Coccyx','Ischial tuberosity','Greater trochanter','Lower leg (shin)','Calf','Medial thigh','Knee','Hip'],
+  physicianPhones:{}  // map: physician name (lowercased) → WhatsApp number, intl digits only
 };
 const DL_MAP={nurses:'dl-nurses',physicians:'dl-physicians',specialties:'dl-specialties',procedures:'dl-procedures',sites:'dl-sites'};
-function getLists(){const s=loadJSON('curanova_lists',{});const out={};for(const k in LIST_DEFAULTS){out[k]=[...new Set([...(LIST_DEFAULTS[k]||[]),...(s[k]||[])])];}return out;}
+function getLists(){
+  const s=loadJSON('curanova_lists',{});const out={};
+  for(const k in LIST_DEFAULTS){
+    if(Array.isArray(LIST_DEFAULTS[k]))out[k]=[...new Set([...(LIST_DEFAULTS[k]||[]),...(s[k]||[])])];
+    else out[k]={...LIST_DEFAULTS[k],...(s[k]||{})};
+  }
+  return out;
+}
 function addToList(k,val){
   val=(val||'').trim();if(!val)return false;
   const stored=loadJSON('curanova_lists',{});
@@ -1882,6 +1901,7 @@ function saveToLog(){
     const crit=alerts.filter(a=>a.sev==='crit');
     toast(isNew?`New record created — ${p.name}`:`Visit ${p.visits.length} added — ${p.name}`);
     if(crit.length)showAlertBanner(crit);
+    if(visit.physician&&userRole!=='physician')showSendBanner(pv.mrn,visit.id,visit.physician);
   }
 }
 
@@ -1993,6 +2013,7 @@ function visitHTML(v){
   const scoreLine=(sc.num&&sc.num!=='–')?`<div class="vh-score">${esc(sc.num)}<small>${esc((sc.label||'').replace(/ score$/,''))}</small></div>`:'';
   const canEdit = userRole!=='physician';
   const vActions = `<div class="v-actions no-print-log" onclick="event.stopPropagation()">
+      ${canEdit?`<button class="v-iconbtn v-wa" title="Send summary to physician via WhatsApp" onclick="event.stopPropagation();sendWA('${escAttr(openMrn)}','${escAttr(v.id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${WA_ICON}</svg></button>`:''}
       <button class="v-iconbtn" title="Print this visit" onclick="event.stopPropagation();printVisit('${escAttr(v.id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-4a2 2 0 012-2h16a2 2 0 012 2v4a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg></button>
       ${canEdit?`<button class="v-iconbtn v-del" title="Delete this visit" onclick="event.stopPropagation();deleteVisit('${escAttr(v.id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>`:''}
     </div>`;
@@ -2017,6 +2038,7 @@ function openPatient(mrn){
     <div class="no-print-log detail-actions">
       <button class="btn btn-ghost" onclick="closePatient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg><span>Back</span></button>
       ${canEdit?`<button class="btn btn-danger-ghost" onclick="deletePatient('${escAttr(p.mrn)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg><span>Delete record</span></button>`:''}
+      ${canEdit&&md?`<button class="btn btn-ghost btn-sm" title="Set or change the referring physician's WhatsApp number" onclick="editPhysNumber('${escAttr(p.mrn)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg><span>Dr. number</span></button>`:''}
       <span class="da-print">
         <button class="btn btn-ghost btn-sm" onclick="setVisitPicks(true)">All</button>
         <button class="btn btn-ghost btn-sm" onclick="setVisitPicks(false)">None</button>
@@ -2094,6 +2116,90 @@ function printVisit(vid){
   window.print();
 }
 window.addEventListener('afterprint',clearPrintOmit);
+
+/* ---- WhatsApp summary to the referring physician ---- */
+const PORTAL_URL='https://hussein-zreik.github.io/curanova/';
+function normPhone(raw){
+  let d=String(raw||'').replace(/\D/g,'');
+  if(d.startsWith('00'))d=d.slice(2);
+  return d.length>=8?d:null;
+}
+function getPhysPhone(name){
+  const m=loadJSON('curanova_lists',{}).physicianPhones||{};
+  return m[(name||'').trim().toLowerCase()]||'';
+}
+function setPhysPhone(name,phone){
+  const key=(name||'').trim().toLowerCase();if(!key)return;
+  const stored=loadJSON('curanova_lists',{});
+  stored.physicianPhones={...(stored.physicianPhones||{}),[key]:phone};
+  saveJSON('curanova_lists',stored);cloudSaveLists();
+}
+function promptPhysPhone(name){
+  const raw=prompt(`WhatsApp number for ${name}\nInternational format, digits only — country code first (e.g. 96179093599):`,getPhysPhone(name)||'');
+  if(raw==null)return null; // cancelled
+  const phone=normPhone(raw);
+  if(!phone){toast('Enter the full number with country code, e.g. 96179093599',true);return null;}
+  setPhysPhone(name,phone);
+  toast(`WhatsApp number saved for ${name}`);
+  return phone;
+}
+function waSummary(p,v){
+  const L=['🩺 *CuraNova — Wound Care Update*'];
+  L.push(`*Patient:* ${p.name||'(unnamed)'} (MRN ${p.mrn})`);
+  const wound=[v.woundLabel||v.toolTitle,v.bodyLoc].filter(Boolean).join(' — ');
+  L.push(`*Wound:* ${wound}${v.visitNo?` · Visit #${v.visitNo}`:''} (${v.date||fmtDate(v.savedAt)})`);
+  const sc=v.score||{};
+  if(sc.num&&sc.num!=='–')L.push(`*${sc.label||'Score'}:* ${sc.num}${sc.interp?` — ${sc.interp}`:''}`);
+  const d=v.dims||{};let size='';
+  if(d.length!=null&&d.width!=null)size=`${d.length} × ${d.width}${d.depth!=null?` × ${d.depth}`:''} cm`;
+  if(v.area!=null)size+=(size?' ':'')+`(${v.area} cm²)`;
+  if(typeof v.prevPct==='number')size+=` — ${v.prevPct>0?'⬆':'⬇'}${Math.abs(v.prevPct)}% vs last visit`;
+  if(size)L.push(`*Size:* ${size}`);
+  const vs=groupWounds(p)[v.woundLabel||v.toolTitle||'Wound']||[v];
+  const a=assessWound(vs);
+  const pts=vs.filter(x=>typeof x.area==='number').sort((x,y)=>new Date(x.savedAt)-new Date(y.savedAt));
+  if(pts.length>=2){
+    const base=pts[0].area,last=pts[pts.length-1].area;
+    const dbase=base>0?Math.round((base-last)/base*100):null;
+    L.push(`*Trend:* ${base} → ${last} cm² over ${pts.length} visits${dbase!=null?` (${dbase>=0?'⬇':'⬆'}${Math.abs(dbase)}%${typeof v.weeks==='number'?` · wk ${v.weeks}`:''})`:''} — ${a.status}`);
+  }else L.push(`*Status:* ${a.status}`);
+  (v.alerts||[]).filter(al=>al.sev==='crit'||al.sev==='warn').forEach(al=>L.push(`${al.sev==='crit'?'🔴':'⚠️'} ${al.text}`));
+  const tail=[];
+  if(v.nextVisit)tail.push(`*Next visit:* ${v.nextVisit}`);
+  if(v.nurse)tail.push(`*Nurse:* ${v.nurse}`);
+  if(tail.length)L.push(tail.join(' · '));
+  L.push(`Full record: ${PORTAL_URL} (Physician Portal)`);
+  return L.join('\n');
+}
+function sendWA(mrn,vid){
+  const p=getPatients()[mrn];if(!p)return;
+  const v=p.visits.find(x=>x.id===vid)||lastVisit(p);if(!v)return;
+  const name=v.physician||(p.visits.filter(x=>x.physician)[0]||{}).physician||'';
+  if(!name){toast('No referring physician recorded on this visit',true);return;}
+  let phone=getPhysPhone(name);
+  if(!phone)phone=promptPhysPhone(name);
+  const text=encodeURIComponent(waSummary(p,v));
+  // no number → WhatsApp's own contact picker, so the message is never lost
+  const url=phone?`https://wa.me/${phone}?text=${text}`:`https://api.whatsapp.com/send?text=${text}`;
+  audit('whatsapp',`MRN ${mrn} · visit ${v.id} → ${name}${phone?'':' (no number — contact picker)'}`);
+  window.open(url,'_blank');
+  dismissSendBanner();
+}
+function editPhysNumber(mrn){
+  const p=getPatients()[mrn];if(!p)return;
+  const md=p.visits.filter(v=>v.physician)[0];
+  if(!md){toast('No referring physician recorded for this patient',true);return;}
+  promptPhysPhone(md.physician);
+}
+const WA_ICON='<path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>';
+function dismissSendBanner(){const b=document.getElementById('sendBanner');if(b)b.classList.remove('show');}
+function showSendBanner(mrn,vid,name){
+  const b=document.getElementById('sendBanner');if(!b)return;
+  b.innerHTML=`<button class="ab-close" onclick="this.parentElement.classList.remove('show')">×</button>
+    <h4><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${WA_ICON}</svg>Saved — update ${esc(name)}?</h4>
+    <div class="wa-row"><button class="btn btn-wa" onclick="sendWA('${escAttr(mrn)}','${escAttr(vid)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${WA_ICON}</svg><span>Send summary via WhatsApp</span></button></div>`;
+  b.classList.add('show');clearTimeout(showSendBanner._t);showSendBanner._t=setTimeout(dismissSendBanner,15000);
+}
 
 /* ---- physician sign-off (append-only oversight record) ---- */
 function getSignoffs(){return loadJSON('curanova_signoffs',{});}
@@ -2568,7 +2674,12 @@ async function cloudPull(){
     const {data:lst} = await sb.from('app_lists').select('data').eq('id',1).maybeSingle();
     if(lst&&lst.data){ // union remote + local pick-lists so neither device loses additions
       const loc=loadJSON('curanova_lists',{}), rem=lst.data, out={};
-      new Set([...Object.keys(loc),...Object.keys(rem)]).forEach(k=>{ out[k]=[...new Set([...(rem[k]||[]),...(loc[k]||[])])]; });
+      new Set([...Object.keys(loc),...Object.keys(rem)]).forEach(k=>{
+        const r=rem[k],l=loc[k];
+        if((r&&!Array.isArray(r)&&typeof r==='object')||(l&&!Array.isArray(l)&&typeof l==='object'))
+          out[k]={...(r||{}),...(l||{})}; // maps (e.g. physicianPhones): local additions win
+        else out[k]=[...new Set([...(r||[]),...(l||[])])];
+      });
       localStorage.setItem('curanova_lists', JSON.stringify(out));
     }
     // physician sign-offs (own table; ignore if not created yet)
