@@ -1,0 +1,10 @@
+{
+  "name": "curanova",
+  "version": "1.0.0",
+  "description": "CuraNova wound-care assessment tool — pure clinical scoring logic and its tests.",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test"
+  }
+}

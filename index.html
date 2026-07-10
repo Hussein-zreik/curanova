@@ -1455,6 +1455,7 @@
   };
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="scoring.js"></script>
 
 <script>
 /* ---------------- Tabs ---------------- */
@@ -2277,7 +2278,9 @@ const bwatSummary=document.getElementById('bwatSummary');
 let lastHealing=null, bwatSizeAuto=true;
 
 /* Editable clinical decision-support thresholds */
-const CDS={areaWorsePct:20, bwatRise:3, bwatSevere:45, bwatStalled:31, healWeek:4, healReductionPct:50};
+/* CDS thresholds + pure scoring/assessment (CDS, areaBand, pushAreaBand, bwatBand,
+   pctTxt, daysBetween, groupWounds, assessWound, overallStatus, TONE_RANK) now live
+   in scoring.js — the single source of truth, unit-tested & CI-gated. */
 const CDS_ICON={
   crit:'<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16v.01"/>',
   warn:'<path d="M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17v.01"/>',
@@ -2359,7 +2362,6 @@ function miniScore(id,total,max,label,band){
   const el=document.getElementById(id);if(!el)return;el.classList.add('show');
   el.innerHTML=`<div class="mt">${total}<small>/${max}</small></div><div class="mmeta"><div class="ms-l">${label}</div><div class="ms-v">${band.v}</div></div><span class="ms-chip" style="background:${band.c}">${band.tag}</span>`;
 }
-function pushAreaBand(a){if(a<=0)return 0;if(a<0.3)return 1;if(a<0.7)return 2;if(a<=1.0)return 3;if(a<=2.0)return 4;if(a<=3.0)return 5;if(a<=4.0)return 6;if(a<=8.0)return 7;if(a<=12.0)return 8;if(a<=24.0)return 9;return 10;}
 let mstScore=null, wifiRisk=null, pushScore=null;
 function updateInstruments(){
   mstScore=null;wifiRisk=null;pushScore=null;
@@ -2388,9 +2390,6 @@ function metricInput(name){return metricsPanel.querySelector(`[data-metric="${na
 function numVal(name){const v=parseFloat((metricInput(name)||{}).value);return isFinite(v)?v:null;}
 function woundLabelVal(){const el=patientPanel.querySelector('[data-woundlabel]');return el?(el.value||'').trim():'';}
 function currentWoundKey(){return (woundLabelVal()||tools[active].dataset.title).toLowerCase();}
-function areaBand(a){return a<4?1:a<16?2:a<36?3:a<80?4:5;}
-function pctTxt(p){return (p>0?'+':'')+p+'%';}
-function daysBetween(a,b){return Math.round((new Date(a)-new Date(b))/86400000);}
 function getBWAT(){let total=0,done=0;BWAT.forEach(it=>{const s=metricsPanel.querySelector(`input[name="bw_${it.k}"]:checked`);if(s){done++;total+=+s.value;}});return{total,done,complete:done===13};}
 function priorVisitsForCurrentWound(){
   const pv=patientFieldValues();if(!pv.mrn)return[];
@@ -2398,14 +2397,6 @@ function priorVisitsForCurrentWound(){
   const key=currentWoundKey();
   return p.visits.filter(v=>((v.woundLabel||v.toolTitle||'').toLowerCase())===key).sort((a,b)=>new Date(a.savedAt)-new Date(b.savedAt));
 }
-function bwatBand(t){
-  if(t<=13)return{v:'Resurfaced / regenerated',c:'var(--ok)',tag:'Healing'};
-  if(t<=20)return{v:'Healing well',c:'var(--low)',tag:'Healing'};
-  if(t<=30)return{v:'Progressing',c:'var(--mild)',tag:'Watch'};
-  if(t<=45)return{v:'Stalled / deteriorating',c:'var(--mod)',tag:'Escalate'};
-  return{v:'Severe / degeneration',c:'var(--severe)',tag:'Escalate'};
-}
-
 /* compute + render measurement strip and BWAT total */
 function updateHealing(){
   if(!assessTools.includes(active)){lastHealing=null;return null;}
@@ -2529,39 +2520,8 @@ function sparkline(pts){
   const dots=pts.map((p,i)=>`<circle cx="${xs(i).toFixed(1)}" cy="${ys(p.area).toFixed(1)}" r="3.5" fill="#0D9488"/>`).join('');
   return `<svg class="spark" viewBox="0 0 ${w} ${hgt}" preserveAspectRatio="none"><path d="${line}" fill="none" stroke="#0D9488" stroke-width="2.5" vector-effect="non-scaling-stroke"/>${dots}</svg>`;
 }
-/* ---- the Log ASSESSES: synthesize a status per wound from its saved visits ---- */
-function groupWounds(p){const g={};(p.visits||[]).forEach(v=>{const k=v.woundLabel||v.toolTitle||'Wound';(g[k]=g[k]||[]).push(v);});return g;}
-function assessWound(vs){
-  const sorted=[...vs].sort((a,b)=>new Date(a.savedAt)-new Date(b.savedAt));
-  const L=sorted[sorted.length-1]||{}, n=sorted.length;
-  const al=L.alerts||[], crit=al.filter(a=>a.sev==='crit').length, warn=al.filter(a=>a.sev==='warn').length;
-  const area=typeof L.area==='number'?L.area:null, red=typeof L.reductionPct==='number'?L.reductionPct:null,
-        prevPct=typeof L.prevPct==='number'?L.prevPct:null, bwat=typeof L.bwat==='number'?L.bwat:null,
-        weeks=typeof L.weeks==='number'?L.weeks:null;
-  let status,tone,chip,why;
-  if((area!=null&&area<=0.1)||(bwat!=null&&bwat<=13)){status='Healed / resurfaced';tone='good';chip='Healed';why='Wound closed — BWAT at floor / area ~0.';}
-  else if(crit>0||(prevPct!=null&&prevPct>=CDS.areaWorsePct)||(bwat!=null&&bwat>CDS.bwatSevere)||(weeks!=null&&weeks>=CDS.healWeek&&red!=null&&red<CDS.healReductionPct)){
-    status='Deteriorating — escalate';tone='crit';chip='Escalate';const b=[];
-    if(prevPct!=null&&prevPct>=CDS.areaWorsePct)b.push(`area ↑${prevPct}% vs last visit`);
-    if(weeks!=null&&weeks>=CDS.healWeek&&red!=null&&red<CDS.healReductionPct)b.push(`${red}% reduction by wk ${weeks} (target ≥${CDS.healReductionPct}%)`);
-    if(bwat!=null&&bwat>CDS.bwatSevere)b.push(`BWAT ${bwat}/65`);
-    if(!b.length&&crit)b.push(`${crit} critical alert${crit>1?'s':''}`);
-    why=b.join(' · ')+'.';
-  }
-  else if(warn>0||(bwat!=null&&bwat>=CDS.bwatStalled)||(n>=2&&red!=null&&red<20)){
-    status='Stalled — watch';tone='warn';chip='Watch';const b=[];
-    if(bwat!=null&&bwat>=CDS.bwatStalled)b.push(`BWAT ${bwat}/65 stalled`);
-    if(n>=2&&red!=null)b.push(`${red}% below baseline`);
-    if(!b.length&&warn)b.push(`${warn} warning${warn>1?'s':''}`);
-    why=b.join(' · ')+'. Optimise dressing / offloading & reassess.';
-  }
-  else if(n<2||red==null){status='Baseline recorded';tone='info';chip='New';why='First measured visit — trend not yet established.';}
-  else{const onTrack=red>=CDS.healReductionPct;status=onTrack?'On track to heal':'Healing';tone='good';chip=onTrack?'On track':'Healing';
-    why=onTrack&&weeks!=null?`${red}% area reduction by wk ${weeks} — meets the ≥${CDS.healReductionPct}% predictor.`:`${red}% below baseline${bwat!=null?` · BWAT ${bwat}/65`:''}.`;}
-  return {status,tone,chip,why};
-}
-const TONE_RANK={crit:0,warn:1,info:2,good:3};
-function overallStatus(p){let best=null;Object.values(groupWounds(p)).forEach(vs=>{const a=assessWound(vs);if(!best||TONE_RANK[a.tone]<TONE_RANK[best.tone])best=a;});return best;}
+/* ---- the Log ASSESSES: groupWounds / assessWound / TONE_RANK / overallStatus
+   now live in scoring.js (unit-tested). Rendering that consumes them stays here. ---- */
 function patientAssessmentLine(p){
   const items=Object.values(groupWounds(p)).map(assessWound);if(!items.length)return'';
   const worst=items.reduce((m,a)=>!m||TONE_RANK[a.tone]<TONE_RANK[m.tone]?a:m,null);

@@ -48,7 +48,9 @@ Notes:
 ---
 
 ## 4. Architecture
-- **`index.html`** is the entire app (~2700 lines: HTML + inline CSS + vanilla JS). No build step, no framework.
+- **`index.html`** is the app UI + most logic (~2900 lines: HTML + inline CSS + vanilla JS). No framework.
+- **`scoring.js`** — pure clinical scoring/assessment logic, extracted as the **single source of truth** (session 2026-07-09). No DOM/app-state deps. Loaded as a classic `<script src="scoring.js">` **before** the inline app script (so it defines the globals `CDS`, `TONE_RANK`, `pctTxt`, `areaBand`, `pushAreaBand`, `daysBetween`, `bwatBand`, `groupWounds`, `assessWound`, `overallStatus` that index.html calls by name), and `require()`d by tests in Node (dual browser/CommonJS via a `typeof module` guard). **Add new score bands / CDS thresholds here, not inline.** It's cached in `sw.js` CORE (bumped to `curanova-v5`).
+- **Tests/CI:** `scoring.test.js` (Node built-in `node --test`, zero deps) pins every score band + escalation threshold; `.github/workflows/test.yml` runs it on every push/PR; `package.json` has `"test":"node --test"`. Run locally: `node --test`. **When you change a threshold in scoring.js, update its test.**
 - **PWA:** `sw.js` (network-first navigation, stale-while-revalidate assets, never caches `*.supabase.co`, skipWaiting+clients.claim), `manifest.webmanifest`, `icon-192.png`, `icon-512.png`.
 - **Local persistence (localStorage keys):** `curanova_patients`, `curanova_lists`, `curanova_queue` (offline write queue), `curanova_audit`, `curanova_signoffs`, `curanova_draft`.
 - **Supabase (managed Postgres + Auth + RLS + realtime):**
