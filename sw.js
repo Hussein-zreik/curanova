@@ -1,13 +1,16 @@
 /* CuraNova service worker — offline app shell + safe passthrough for Supabase */
-const CACHE = 'curanova-v6';
+const CACHE = 'curanova-v7';
 const CORE = ['./', './index.html', './scoring.js', './interventions.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './logo-tile.png'];
-const EXTRA = ['https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'];
+// Pinned + SRI-verified in index.html. Fetch CORS (not no-cors) so the cached copy
+// is a readable response the browser can validate against the integrity hash —
+// a cached opaque response would fail SRI and block the library.
+const EXTRA = ['https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2/dist/umd/supabase.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil((async () => {
     const c = await caches.open(CACHE);
     await c.addAll(CORE).catch(() => {});
-    await Promise.all(EXTRA.map(u => fetch(u, { mode: 'no-cors' }).then(r => c.put(u, r)).catch(() => {})));
+    await Promise.all(EXTRA.map(u => fetch(u, { mode: 'cors' }).then(r => c.put(u, r)).catch(() => {})));
     self.skipWaiting();
   })());
 });

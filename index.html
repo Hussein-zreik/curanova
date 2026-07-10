@@ -2,6 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Content-Security-Policy: defence-in-depth for a tool holding patient data.
+     Restricts where code can load from and where data can be sent. 'unsafe-inline'
+     is required because the app's scripts/styles/handlers are inline (single-file,
+     no build); the value is in the tight origin allow-list (only Supabase + the
+     pinned, SRI-verified supabase-js on jsdelivr + Google Fonts). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CuraNova — Wound Assessment Tool</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -1530,7 +1536,14 @@
     email:   'team@curanova.app'   // must match the shared login you created in Supabase → Authentication → Users
   };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Pinned to an exact, immutable version with Subresource Integrity: the browser
+     refuses to run the file unless its bytes match this hash, so a compromised CDN
+     cannot inject code that would run against patient data. crossorigin=anonymous
+     makes the response CORS-readable so SRI (and the SW cache) can validate it.
+     To bump: `npm pack @supabase/supabase-js@<ver>`, hash dist/umd/supabase.js with
+     `openssl dgst -sha384 -binary … | openssl base64 -A`, update src+integrity here
+     and the URL in sw.js. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2/dist/umd/supabase.js" integrity="sha384-yifgV8iFWyp5cgu+V1G1rtlEHpEErPlL5fTrkUELIsWq0CIVDON2WP/NlXVJT3vO" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="scoring.js"></script>
 <script src="interventions.js"></script>
 

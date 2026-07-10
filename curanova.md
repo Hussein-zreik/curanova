@@ -148,7 +148,8 @@ Notes:
 ---
 
 ## 8. Key facts / pointers
-- Supabase project ref: `ejxjlifhnqkseavoqlwq`. Only the **anon** key is embedded in `index.html` (public by design). The **service_role** key must NEVER be committed/embedded (user pasted it once early on — recommend rotating it if not already).
+- **Security hardening (session 2026-07-10):** `index.html` has a **Content-Security-Policy** meta (tight origin allow-list: self + `*.supabase.co`/`wss:` + pinned jsdelivr + Google Fonts + `data:`/`blob:` images; `'unsafe-inline'` kept because scripts/styles/handlers are inline). The **supabase-js** CDN script is **pinned to an exact version with Subresource Integrity** (`@2.110.2/dist/umd/supabase.js` + `sha384-…` + `crossorigin=anonymous`) so a hijacked CDN can't inject code. `sw.js` fetches it **CORS** (not no-cors) so the cached copy is SRI-validatable; cache bumped to `curanova-v7`. **To bump the lib:** `npm pack @supabase/supabase-js@<ver>` → `openssl dgst -sha384 -binary package/dist/umd/supabase.js | openssl base64 -A` → update `src`+`integrity` in index.html AND the URL in sw.js. If the lib ever fails to load, `cloudInit` already degrades to local-only with a "Cloud library unavailable" toast (no crash).
+- Supabase project ref: `ejxjlifhnqkseavoqlwq`. Only the **anon** key is embedded in `index.html` (public by design). ⚠️ **USER ACTION — rotate the `service_role` key** (it was pasted once early on; only the dashboard can do this): Supabase → Project Settings → API → *Reset service_role*. It must NEVER be committed/embedded (grep confirms it is not in the repo).
 - Shared team login: `team@curanova.app`. Physician test account: `zreik111@gmail.com`.
 - WhatsApp contact on marketing pieces: **+961 79 093 599** (`wa.me/96179093599`).
 - Android package id: `app.curanova.twa`; keystore alias `curanova`, store/key password `CuraNova2026`, SHA-256 in `.well-known/assetlinks.json`.
