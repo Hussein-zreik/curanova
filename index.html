@@ -1551,6 +1551,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2/dist/umd/supabase.js" integrity="sha384-yifgV8iFWyp5cgu+V1G1rtlEHpEErPlL5fTrkUELIsWq0CIVDON2WP/NlXVJT3vO" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="scoring.js"></script>
 <script src="interventions.js"></script>
+<script src="migrations.js"></script>
 
 <script>
 /* ---------------- Tabs ---------------- */
@@ -1954,7 +1955,9 @@ function patientFieldValues(){
 function rememberFields(){tools[active].querySelectorAll('[data-remember]').forEach(inp=>{const v=(inp.value||'').trim();if(v)addToList(inp.dataset.remember,v);});}
 
 /* ---- SAVE to log (append by MRN) ---- */
-function getPatients(){return loadJSON('curanova_patients',{});}
+function getPatients(){return migrateAll(loadJSON('curanova_patients',{}));}   // records upgraded to the current schema on read
+/* one-time: upgrade the stored blob in place so the current shape also syncs to cloud on next push */
+function migrateStored(){ try{ const raw=loadJSON('curanova_patients',{}); migrateAll(raw); saveJSON('curanova_patients',raw); }catch(e){ if(typeof window.cnReport==='function')window.cnReport(e,'migrateStored'); } }
 function saveToLog(){
   if(!assessTools.includes(active))return;
   const pv=patientFieldValues();
@@ -2829,6 +2832,7 @@ async function cloudPull(){
     const remote={}; (pts||[]).forEach(r=>{ if(r.data) remote[r.mrn]=r.data; });
     const local=getPatients(); const out={...local};   // keep local-only (unsynced) patients
     Object.keys(remote).forEach(mrn=>{ out[mrn]=mergePatient(remote[mrn], local[mrn]); });
+    migrateAll(out);   // upgrade any old-shaped remote records to the current schema
     localStorage.setItem('curanova_patients', JSON.stringify(out));
     const {data:lst} = await sb.from('app_lists').select('data').eq('id',1).maybeSingle();
     if(lst&&lst.data){ // union remote + local pick-lists so neither device loses additions
@@ -3218,6 +3222,7 @@ wireAnnotCanvas();
 placeShared('surg');
 renderDatalists();
 restoreDraft();
+migrateStored();   // upgrade any old-shaped records once at startup
 cloudInit();
 
 /* ---------------- Wire up ---------------- */
