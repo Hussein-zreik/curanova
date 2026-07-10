@@ -7,7 +7,7 @@
      is required because the app's scripts/styles/handlers are inline (single-file,
      no build); the value is in the tight origin allow-list (only Supabase + the
      pinned, SRI-verified supabase-js on jsdelivr + Google Fonts). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CuraNova — Wound Assessment Tool</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -635,6 +635,11 @@
   .rec-disc svg{width:16px;height:16px;stroke:var(--mod);flex:none;margin-top:1px}
   .rec-empty{font-size:13px;color:var(--muted);padding:8px 2px}
   @media print{#interventionsPanel{display:none!important}}
+  /* cloud-stored wound photos awaiting a signed URL */
+  .vimg-grid img.ph-pending,.pstrip img.ph-pending{background:var(--canvas-2);min-height:60px;animation:phpulse 1.2s ease-in-out infinite}
+  @keyframes phpulse{0%,100%{opacity:.6}50%{opacity:1}}
+  .vimg-grid img.ph-offline,.pstrip img.ph-offline{background:var(--canvas-2) center/22px no-repeat;opacity:.5}
+  .vimg-grid img.ph-offline{min-height:60px}
 
   @media print{
     #cdsPanel .cds-none{display:none}
@@ -1991,6 +1996,7 @@ function saveToLog(){
     audit('save',`MRN ${pv.mrn} · ${tools[active].dataset.title}`+(isNew?' (new record)':` (visit ${p.visits.length})`));
     clearDraft();
     clearInterventions();
+    offloadVisitPhotos(pv.mrn, visit.id);   // best-effort: move this visit's photos to Storage, slim the record
     toolImages[active]=[];renderImgGrid(active);
     const crit=alerts.filter(a=>a.sev==='crit');
     toast(isNew?`New record created — ${p.name}`:`Visit ${p.visits.length} added — ${p.name}`);
@@ -2104,7 +2110,7 @@ function visitHTML(v){
   let alertsHTML='';
   if(al.length){const ord={crit:0,warn:1,info:2,good:3};
     alertsHTML=`<div class="vsec">Clinical alerts</div>`+[...al].sort((a,b)=>ord[a.sev]-ord[b.sev]).map(a=>`<div class="cds-alert cds-${a.sev}" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${CDS_ICON[a.sev]||CDS_ICON.info}</svg><span>${esc(a.text)}</span></div>`).join('');}
-  if(v.images&&v.images.length)body+=`<div class="vsec">Wound photography</div><div class="vimg-grid">${v.images.map(u=>`<img src="${escAttr(u)}" alt="wound photo">`).join('')}</div>`;
+  if(v.images&&v.images.length)body+=`<div class="vsec">Wound photography</div><div class="vimg-grid">${v.images.map(u=>photoImg(u,'wound photo')).join('')}</div>`;
   const crit=al.filter(a=>a.sev==='crit').length, warn=al.filter(a=>a.sev==='warn').length;
   let badges='';
   if(crit)badges+=`<span class="vbadge b-crit">${crit} critical</span>`;
@@ -2155,6 +2161,7 @@ function openPatient(mrn){
     <div class="traj-wrap">${trajectoryHTML(p)}</div>
     ${[...p.visits].reverse().map(visitHTML).join('')}
   </div></div></div>`;
+  resolvePhotoUrls(d);   // fill cloud-stored photos with signed URLs (inline photos already show)
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function closePatient(){
@@ -2340,6 +2347,7 @@ function deleteVisit(vid){
   if(!openMrn)return;
   if(!confirm('Delete this visit from the patient record? This cannot be undone.'))return;
   const patients=getPatients();const p=patients[openMrn];if(!p)return;
+  deleteCloudPhotos(p.visits.filter(v=>v.id===vid));   // best-effort remove this visit's Storage photos
   p.visits=p.visits.filter(v=>v.id!==vid);
   p.deleted=[...new Set([...(p.deleted||[]),vid])];   // tombstone so merge won't resurrect it
   const mrn=openMrn;
@@ -2355,6 +2363,7 @@ function deletePatient(mrn){
   const patients=getPatients();const p=patients[mrn];if(!p)return;
   const n=(p.visits||[]).length;
   if(!confirm(`Delete the ENTIRE record for ${p.name||'this patient'} (MRN ${mrn})?\n\nAll ${n} visit${n!==1?'s':''} will be permanently removed. This cannot be undone.`))return;
+  deleteCloudPhotos(p.visits||[]);   // best-effort remove all Storage photos for this patient
   delete patients[mrn];
   saveJSON('curanova_patients',patients);
   cloudDeletePatient(mrn);
@@ -2740,7 +2749,7 @@ function trajectoryHTML(p){
     if(wImg.length){
       body+=`<div class="ts-lbl">Photo progression</div><div class="photo-strip">`+wImg.map((v,i)=>{
         const tagTxt=i===0&&wImg.length>1?'Baseline':i===wImg.length-1&&wImg.length>1?'Latest':'';
-        return `<figure class="pstrip"><img src="${escAttr(v.images[0])}" alt="wound photo"><figcaption>${tagTxt?`<span class="tag2">${tagTxt}</span><br>`:''}${esc(v.date||fmtDate(v.savedAt))}</figcaption></figure>`;
+        return `<figure class="pstrip">${photoImg(v.images[0],'wound photo')}<figcaption>${tagTxt?`<span class="tag2">${tagTxt}</span><br>`:''}${esc(v.date||fmtDate(v.savedAt))}</figcaption></figure>`;
       }).join('')+`</div>`;
     }
     return `<div class="traj"><div class="traj-h"><span class="tt">${esc(name)}</span><span class="ts">${esc(summary)}</span></div><div class="traj-b">${body}</div></div>`;
@@ -2897,6 +2906,83 @@ async function cloudSaveLists(){
   if(!cloudEnabled) return;
   if(!cloudReady){ queueOp({type:'lists',mrn:'_'}); return; }
   try{ const {error}=await sb.from('app_lists').upsert({id:1,data:loadJSON('curanova_lists',{})}); if(error)throw error; }catch(e){ console.warn('lists',e); queueOp({type:'lists',mrn:'_'}); }
+}
+
+/* =================================================================
+   WOUND PHOTO STORAGE (Supabase Storage, private bucket + signed URLs)
+   Photos are saved INLINE first (reliable, unchanged), then a best-effort
+   background step uploads them and swaps the base64 for a small {path}
+   reference — slimming localStorage and the synced blob. If the bucket
+   isn't set up, we're offline, or anything fails, the photo simply stays
+   inline (today's behaviour) — so this is safe to ship before setup.
+   A visit image entry is EITHER a legacy data-URL string OR {path:'…'}.
+   ================================================================= */
+const PHOTO_BUCKET='wound-photos';
+const _signedUrls={};                    // path -> {url, exp}
+function photoStorageReady(){ return !!(cloudEnabled && cloudReady && sb && sb.storage); }
+function isCloudPhoto(entry){ return entry && typeof entry==='object' && typeof entry.path==='string'; }
+function isInlinePhoto(entry){ return typeof entry==='string' && entry.indexOf('data:')===0; }
+function dataUrlToBlob(u){
+  const i=u.indexOf(','); const meta=u.slice(0,i), b64=u.slice(i+1);
+  const mime=(meta.match(/data:(.*?);base64/)||[])[1]||'image/jpeg';
+  const bin=atob(b64), arr=new Uint8Array(bin.length);
+  for(let k=0;k<bin.length;k++)arr[k]=bin.charCodeAt(k);
+  return new Blob([arr],{type:mime});
+}
+/* After a save: upload this visit's inline photos, rewrite to {path}, re-save. */
+async function offloadVisitPhotos(mrn,vid){
+  if(!photoStorageReady()) return;
+  try{
+    const patients=getPatients(), p=patients[mrn]; if(!p) return;
+    const v=(p.visits||[]).find(x=>x.id===vid); if(!v||!Array.isArray(v.images)||!v.images.length) return;
+    let changed=false;
+    for(let i=0;i<v.images.length;i++){
+      const entry=v.images[i];
+      if(!isInlinePhoto(entry)) continue;               // already a ref, or nothing
+      const path=`${mrn}/${vid}/${i}.jpg`;
+      const {error}=await sb.storage.from(PHOTO_BUCKET).upload(path, dataUrlToBlob(entry), {contentType:'image/jpeg', upsert:true});
+      if(error) throw error;
+      v.images[i]={path}; changed=true;
+    }
+    if(changed){
+      const cur=getPatients(); if(cur[mrn]){ cur[mrn]=p; saveJSON('curanova_patients',cur); }  // slim local copy
+      cloudUpsertPatient(p);                                                                      // slim synced blob
+    }
+  }catch(e){ /* leave inline — nothing lost; retries on next save of this visit */ console.warn('photo offload',e); }
+}
+/* Best-effort delete of a visit's / patient's cloud photos on record deletion. */
+async function deleteCloudPhotos(entriesOrVisits){
+  if(!photoStorageReady()) return;
+  const paths=[];
+  (entriesOrVisits||[]).forEach(v=>{ (v && v.images ? v.images : []).forEach(e=>{ if(isCloudPhoto(e)) paths.push(e.path); }); });
+  if(!paths.length) return;
+  try{ await sb.storage.from(PHOTO_BUCKET).remove(paths); }catch(e){ console.warn('photo delete',e); }
+}
+/* Build an <img> tag for one image entry (inline renders immediately; cloud waits for a signed URL). */
+const PH_PLACEHOLDER='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+function photoImg(entry,alt){
+  if(isInlinePhoto(entry)) return `<img src="${escAttr(entry)}" alt="${escAttr(alt||'wound photo')}">`;
+  if(isCloudPhoto(entry))  return `<img data-storage-path="${escAttr(entry.path)}" src="${PH_PLACEHOLDER}" class="ph-pending" alt="${escAttr(alt||'wound photo')}">`;
+  return '';
+}
+function signedFresh(path){ const c=_signedUrls[path]; return c && c.exp>Date.now(); }
+/* Resolve every cloud-photo <img> inside a scope to a signed URL (cached ~55 min). */
+async function resolvePhotoUrls(scope){
+  scope=scope||document;
+  const imgs=[...scope.querySelectorAll('img[data-storage-path]')];
+  if(!imgs.length) return;
+  const apply=()=>imgs.forEach(im=>{ const c=_signedUrls[im.dataset.storagePath];
+    if(c){ im.src=c.url; im.classList.remove('ph-pending','ph-offline'); } else { im.classList.add('ph-offline'); } });
+  if(!photoStorageReady()){ imgs.forEach(im=>im.classList.add('ph-offline')); return; }
+  const need=[...new Set(imgs.map(im=>im.dataset.storagePath))].filter(p=>!signedFresh(p));
+  if(need.length){
+    try{
+      const {data,error}=await sb.storage.from(PHOTO_BUCKET).createSignedUrls(need, 3600);
+      if(error) throw error;
+      (data||[]).forEach(d=>{ if(d && d.signedUrl && d.path) _signedUrls[d.path]={url:d.signedUrl, exp:Date.now()+3300*1000}; });
+    }catch(e){ console.warn('signed urls',e); }
+  }
+  apply();
 }
 /* ---- audit trail (local always; cloud best-effort) ---- */
 function audit(action,detail){
