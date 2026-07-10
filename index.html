@@ -614,6 +614,22 @@
   .btn-wa{background:#25D366;color:#fff}.btn-wa:hover{background:#1EBE57;transform:translateY(-1px)}
   .v-iconbtn.v-wa:hover{background:#E7F9EE;color:#1EBE57}
 
+  /* nursing-interventions recommendations */
+  #interventionsPanel .panel-h .n{color:#fff}
+  .rec-group{margin:16px 0 4px}
+  .rec-group:first-child{margin-top:8px}
+  .rec-gh{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+  .rec-gh .dot{width:10px;height:10px;border-radius:50%;flex:none}
+  .rec-gh .tt{font-family:'Plus Jakarta Sans';font-weight:800;font-size:13.5px;color:var(--navy)}
+  .rec-gh .basis{font-size:10.5px;color:var(--muted-2);font-weight:600;font-style:italic;margin-left:auto}
+  .rec-list{list-style:none;margin:0;padding:0}
+  .rec-list li{display:flex;gap:9px;padding:7px 2px;border-top:1px solid var(--border-2);font-size:13px;line-height:1.55;color:var(--ink)}
+  .rec-list li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--border);margin-top:7px;flex:none}
+  .rec-disc{margin-top:16px;padding:11px 13px;background:var(--canvas-2);border:1px solid var(--border-2);border-radius:10px;font-size:11.5px;line-height:1.5;color:var(--muted);display:flex;gap:9px;align-items:flex-start}
+  .rec-disc svg{width:16px;height:16px;stroke:var(--mod);flex:none;margin-top:1px}
+  .rec-empty{font-size:13px;color:var(--muted);padding:8px 2px}
+  @media print{#interventionsPanel{display:none!important}}
+
   @media print{
     #cdsPanel .cds-none{display:none}
     .traj-h{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -718,6 +734,21 @@
   <div class="panel" id="nutritionPanel">
     <div class="panel-h"><span class="n" style="background:var(--mild)">◍</span><h3>Nutrition Screen</h3><span class="h-sub">Malnutrition Screening Tool (MST) · nutrition drives healing</span></div>
     <div class="panel-b"><div id="nutItems"></div><div id="nutSummary" class="mini-score"></div></div>
+  </div>
+
+  <!-- ===== SHARED: Nursing interventions (guideline-based, nurse-only, not saved) ===== -->
+  <div class="panel" id="interventionsPanel">
+    <div class="panel-h"><span class="n" style="background:var(--teal)">✚</span><h3>Nursing Interventions</h3><span class="h-sub">Guideline-based recommendations · decision support for the nurse</span></div>
+    <div class="panel-b">
+      <div class="rec-intro" id="recIntro">
+        <div class="callout info"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg><span>Complete the identification and assessment above, then generate evidence-based nursing interventions tailored to this wound's scores and findings. This guidance is for the nurse and is <b>not saved</b> to the patient record.</span></div>
+        <button type="button" class="btn btn-primary" id="recBtn" onclick="renderInterventions()" style="margin-top:12px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          <span>Get nursing interventions</span>
+        </button>
+      </div>
+      <div class="rec-out" id="recOut"></div>
+    </div>
   </div>
 
   <!-- ================================================================= -->
@@ -1501,6 +1532,7 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="scoring.js"></script>
+<script src="interventions.js"></script>
 
 <script>
 /* ---------------- Tabs ---------------- */
@@ -1743,6 +1775,7 @@ function resetActive(){
   el.querySelectorAll('[data-pts]').forEach(b=>{b.textContent=b.textContent.includes('/')?'0/1':'–';b.style.color='var(--muted-2)';});
   toolImages[active]=[];renderImgGrid(active);
   bwatSizeAuto=true;pushAreaAuto=true;
+  clearInterventions();
   recalc();
 }
 
@@ -1854,7 +1887,7 @@ function captureTool(toolKey){
   el.querySelectorAll('.panel').forEach(panel=>{
     const titleEl=panel.querySelector('.panel-h h3');
     const title=titleEl?titleEl.textContent.trim():'';
-    if(/Wound Photography/i.test(title))return;
+    if(/Wound Photography/i.test(title)||/Nursing Interventions/i.test(title))return;
     const items=[];
     // plain fields
     panel.querySelectorAll('.field').forEach(f=>{
@@ -1944,6 +1977,7 @@ function saveToLog(){
     cloudUpsertPatient(p);
     audit('save',`MRN ${pv.mrn} · ${tools[active].dataset.title}`+(isNew?' (new record)':` (visit ${p.visits.length})`));
     clearDraft();
+    clearInterventions();
     toolImages[active]=[];renderImgGrid(active);
     const crit=alerts.filter(a=>a.sev==='crit');
     toast(isNew?`New record created — ${p.name}`:`Visit ${p.visits.length} added — ${p.name}`);
@@ -2324,6 +2358,7 @@ document.getElementById('logSearch').addEventListener('input',()=>{if(openMrn)cl
    ================================================================= */
 const metricsPanel=document.getElementById('metricsPanel');
 const cdsPanel=document.getElementById('cdsPanel');
+const interventionsPanel=document.getElementById('interventionsPanel');
 const cdsList=document.getElementById('cdsList');
 const metricStrip=document.getElementById('metricStrip');
 const bwatSummary=document.getElementById('bwatSummary');
@@ -2373,6 +2408,8 @@ function placeShared(k){
   const photoPanel=photo?photo.closest('.panel'):null;
   if(photoPanel){tools[k].insertBefore(metricsPanel, photoPanel);tools[k].insertBefore(nutritionPanel, photoPanel);}
   else {tools[k].appendChild(metricsPanel);tools[k].appendChild(nutritionPanel);}
+  tools[k].appendChild(interventionsPanel);   // always last: assessment → alerts → … → interventions → save
+  clearInterventions();                        // fresh per tool; never carry another wound's advice
 }
 
 /* ---- extra validated instruments: Nutrition (MST) · PUSH · WIfI ---- */
@@ -2553,6 +2590,94 @@ function renderCDS(){
   const order={crit:0,warn:1,info:2,good:3};
   alerts.sort((a,b)=>order[a.sev]-order[b.sev]);
   cdsList.innerHTML=alerts.map(a=>`<div class="cds-alert cds-${a.sev}"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${CDS_ICON[a.sev]}</svg><span>${a.html}</span></div>`).join('');
+}
+/* ---- Nursing interventions: gather findings → pure engine → render (nurse-only, not saved) ---- */
+function bwatValNum(k){const s=metricsPanel.querySelector(`input[name="bw_${k}"]:checked`);return s?+s.value:null;}
+function selectByOption(scopeSel,optText){
+  const scope=document.querySelector(scopeSel)||document;
+  const sels=scope.querySelectorAll('select');
+  for(const s of sels){ if([...s.options].some(o=>o.textContent.trim()===optText)) return (s.value||'').trim(); }
+  return '';
+}
+function gatherClinicalContext(){
+  const h=lastHealing||{};
+  const ntype=bwatValNum('ntype'),namt=bwatValNum('namt'),etype=bwatValNum('etype'),eamt=bwatValNum('eamt'),
+        gran=bwatValNum('gran'),skin=bwatValNum('skin'),edema=bwatValNum('edema'),indur=bwatValNum('indur');
+  const exTypeMap={1:'none',2:'bloody',3:'serosanguineous',4:'serous',5:'purulent'};
+  const exAmtMap={1:'none',2:'scant',3:'small',4:'moderate',5:'large'};
+  // healing trend from prior visits of the current wound + this in-progress measurement
+  let trend=null;
+  try{
+    const synth=[...priorVisitsForCurrentWound()];
+    if(h.area!=null)synth.push({savedAt:new Date().toISOString(),area:h.area,reductionPct:h.reductionPct,prevPct:h.prevPct,bwat:h.bwat,weeks:h.weeks,alerts:[]});
+    if(synth.length){const a=assessWound(synth);
+      trend=/escalat|deteriorat/i.test(a.status)?'deteriorating':(a.chip==='Healed'||a.chip==='On track'||a.chip==='Healing')?'improving':a.chip==='Watch'?'stalled':'new';}
+  }catch(_){}
+  const ctx={
+    tool:active,
+    area:h.area!=null?h.area:null, bwat:h.bwat!=null?h.bwat:null, bwatTag:(h.bwat!=null?bwatBand(h.bwat).tag:null),
+    reductionPct:h.reductionPct!=null?h.reductionPct:null, prevPct:h.prevPct!=null?h.prevPct:null, weeks:h.weeks!=null?h.weeks:null, trend:trend,
+    necrotic:{present:(ntype!=null&&ntype>=2&&(namt==null||namt>=2)), slough:(ntype===3), eschar:(ntype!=null&&ntype>=4)},
+    granulationPoor:(gran!=null&&gran>=4),
+    exType:(etype!=null?exTypeMap[etype]:null), exAmount:(eamt!=null?exAmtMap[eamt]:null),
+    periwoundIssue:(skin!=null&&skin>=3), edema:(edema!=null&&edema>=2), induration:(indur!=null&&indur>=2),
+    undermining:((metricInput('undermining')||{}).value||'').trim(), depthCm:numVal('depth'),
+    mstRisk:(mstScore!=null&&mstScore>=2), pain:null, odour:null, infection:null
+  };
+  if(active==='surg'){
+    const signs=document.querySelectorAll('#tool-surg #ssiSigns input:checked').length;
+    let cls=null;['organ','deep','superficial'].forEach(w=>{if(!cls&&document.querySelector(`#ssiDepth input[data-w="${w}"]:checked`))cls=w;});
+    ctx.surg={ssiSigns:signs,ssiClass:cls,dehiscence:!!document.querySelector('#ssiDepth input[data-w="dehisc"]:checked')};
+    if(signs>=1)ctx.infection=signs>=3?'spreading':'local';
+  }
+  if(active==='dfu'){
+    let sb=0,sbDone=0;document.querySelectorAll('#tool-dfu [data-sinbad] input:checked').forEach(s=>{sb+=+s.value;sbDone++;});
+    const idsaEl=document.querySelector('#tool-dfu [name=idsa]:checked');
+    ctx.dfu={sinbad:sbDone===6?sb:null,idsa:idsaEl?idsaEl.value:null,
+      lops:[...document.querySelectorAll('#footMap .site')].some(s=>+s.dataset.state===2),
+      wifiI:(wifiRisk?wifiRisk.i:null), abi:null};
+    if(idsaEl){if(idsaEl.value==='Severe')ctx.infection='spreading';else if(idsaEl.value==='Moderate'||idsaEl.value==='Mild')ctx.infection='local';}
+  }
+  if(active==='pi'){
+    const stageEl=document.querySelector('#piStage [name=stage]:checked');
+    const subs=['sens','moist','act','mob','nut','fric'];let bt=0,bd=0,sub={};
+    subs.forEach(n=>{const s=document.querySelector(`#bradenWrap [name=br_${n}]:checked`);if(s){bt+=+s.value;bd++;sub[n]=+s.value;}});
+    ctx.pi={stage:stageEl?stageEl.value:null,braden:bd===6?bt:null,bradenSub:bd?sub:null};
+    const infSel=selectByOption('#tool-pi','Local (erythema/warmth/pain)');
+    if(/spreading/i.test(infSel))ctx.infection='spreading';else if(/local/i.test(infSel))ctx.infection='local';
+    if(/strong/i.test(selectByOption('#tool-pi','Strong')))ctx.odour='strong';
+  }
+  if(active==='ven'){
+    const abpi=parseFloat((document.getElementById('venABPI')||{}).value);
+    const ceapEl=document.querySelector('#tool-ven [name=ceap]:checked');
+    ctx.ven={abpi:isFinite(abpi)?abpi:null,ceap:ceapEl?ceapEl.value:null};
+  }
+  if(active==='art'){
+    const abi=parseFloat((document.getElementById('artABI')||{}).value);
+    ctx.art={abi:isFinite(abi)?abi:null,gangrene:!!document.querySelector('#artIsch input[data-w="gangrene"]:checked'),
+      ischSigns:document.querySelectorAll('#artIsch input:checked').length};
+  }
+  return ctx;
+}
+function clearInterventions(){const out=document.getElementById('recOut');if(out)out.innerHTML='';}
+function renderInterventions(){
+  if(!assessTools.includes(active))return;
+  const out=document.getElementById('recOut');if(!out)return;
+  const ctx=gatherClinicalContext();
+  const hasData = ctx.area!=null||ctx.bwat!=null||
+    (ctx.surg&&(ctx.surg.ssiSigns>=1||ctx.surg.ssiClass))||
+    (ctx.dfu&&(ctx.dfu.sinbad!=null||ctx.dfu.idsa||ctx.dfu.wifiI!=null||ctx.dfu.lops))||
+    (ctx.pi&&(ctx.pi.stage||ctx.pi.braden!=null))||
+    (ctx.ven&&(ctx.ven.abpi!=null||ctx.ven.ceap))||
+    (ctx.art&&(ctx.art.abi!=null||ctx.art.gangrene||ctx.art.ischSigns>0));
+  if(!hasData){out.innerHTML=`<div class="rec-empty">Enter the wound measurements and assessment findings above first — recommendations are generated from the scores you record.</div>`;return;}
+  const groups=recommendInterventions(ctx);
+  const dot={crit:'var(--high)',warn:'var(--mod)',info:'var(--teal)',good:'var(--ok)'};
+  let html=groups.map(g=>`<div class="rec-group"><div class="rec-gh"><span class="dot" style="background:${dot[g.tone]||'var(--muted)'}"></span><span class="tt">${esc(g.title)}</span>${g.basis?`<span class="basis">${esc(g.basis)}</span>`:''}</div><ul class="rec-list">${g.items.map(it=>`<li>${esc(it)}</li>`).join('')}</ul></div>`).join('');
+  html+=`<div class="rec-disc"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17v.01"/></svg><span>Decision support only — generated from the scores and findings you entered, anchored to IWGDF 2023, ADA 2025, NPIAP/EPUAP 2019, CDC/NHSN and CEAP. It does not replace clinical judgement or a physician's orders, and is not saved to the patient record.</span></div>`;
+  out.innerHTML=html;
+  try{audit('interventions',`${tools[active].dataset.title} · ${groups.length} groups`);}catch(_){}
+  out.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function showAlertBanner(crit){
   const b=document.getElementById('alertBanner');
