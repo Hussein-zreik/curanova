@@ -1,5 +1,5 @@
 /* CuraNova service worker — offline app shell + safe passthrough for Supabase */
-const CACHE = 'curanova-v7';
+const CACHE = 'curanova-v8';
 const CORE = ['./', './index.html', './scoring.js', './interventions.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './logo-tile.png'];
 // Pinned + SRI-verified in index.html. Fetch CORS (not no-cors) so the cached copy
 // is a readable response the browser can validate against the integrity hash —
