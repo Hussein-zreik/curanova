@@ -1436,6 +1436,51 @@
 <!-- on shared, cross-device sync. Leave blank to stay browser-only.-->
 <!-- ============================================================= -->
 <script>
+  /* ---- crash safety net: never let an unexpected error fail silently ----
+     Runs first so it catches errors anywhere (including startup). Each error is
+     (1) recorded to a local ring buffer, (2) best-effort written to the audit
+     trail so the team can see it happened (syncs to the cloud), and (3) surfaced
+     to the user with a plain-language banner. Self-contained: it does NOT depend
+     on the app's toast/audit having loaded yet. */
+  (function(){
+    var KEY='curanova_errors', MAX=50, lastSig='', lastAt=0;
+    function ctx(){ try{ return (typeof active!=='undefined'?active:'')+((typeof openMrn!=='undefined'&&openMrn)?(' · MRN '+openMrn):''); }catch(_){ return ''; } }
+    function recordLocal(kind,msg,src,stack){
+      try{
+        var log=JSON.parse(localStorage.getItem(KEY)||'[]');
+        log.push({ts:new Date().toISOString(),kind:kind,msg:String(msg||'').slice(0,500),
+          src:String(src||'').slice(0,300),stack:String(stack||'').slice(0,600),ctx:ctx(),ua:navigator.userAgent});
+        while(log.length>MAX) log.shift();
+        localStorage.setItem(KEY,JSON.stringify(log));
+      }catch(_){}
+    }
+    function notify(){
+      try{
+        if(!document.body){ return; }
+        var id='cn-errbar', b=document.getElementById(id);
+        if(!b){ b=document.createElement('div'); b.id=id;
+          b.setAttribute('style','position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:9999;max-width:520px;width:calc(100% - 32px);background:#fff;border:1px solid #F1C4BE;border-left:5px solid #D1483A;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.18);padding:13px 16px;font:600 13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#0B2A43');
+          document.body.appendChild(b);
+        }
+        b.innerHTML='<span style="color:#D1483A">⚠ Something went wrong.</span> Your last action may not have been saved — please check the Patient Log and try again.'
+          +'<button style="margin-left:10px;border:0;background:none;color:#0D9488;font-weight:700;cursor:pointer" onclick="this.parentElement.remove()">Dismiss</button>';
+        clearTimeout(notify._t); notify._t=setTimeout(function(){ if(b&&b.parentElement)b.remove(); },12000);
+      }catch(_){}
+    }
+    function handle(kind,msg,src,stack){
+      recordLocal(kind,msg,src,stack);                 // always keep a local record
+      var sig=kind+'|'+msg, now=Date.now();
+      if(sig===lastSig && now-lastAt<3000) return;      // throttle audit + banner on repeats
+      lastSig=sig; lastAt=now;
+      try{ if(typeof audit==='function') audit('error',kind+': '+String(msg||'').slice(0,140)+(ctx()?(' ['+ctx()+']'):'')); }catch(_){}
+      notify();
+    }
+    window.addEventListener('error',function(e){ if(e&&e.message) handle('js',e.message,(e.filename||'')+':'+(e.lineno||''),e.error&&e.error.stack); });
+    window.addEventListener('unhandledrejection',function(e){ var r=e&&e.reason; handle('promise',(r&&r.message)||String(r),'',r&&r.stack); });
+    /* manual hook so critical paths can report a caught error explicitly */
+    window.cnReport=function(err,where){ handle('caught',(err&&err.message)||String(err),where||'',err&&err.stack); };
+  })();
+
   /* Progressive Web App: install + offline app shell, with auto-update */
   if('serviceWorker' in navigator){
     let reloaded=false;
@@ -1865,6 +1910,7 @@ function saveToLog(){
   const focusField=(label)=>{const f=[...patientPanel.querySelectorAll('.field')].find(x=>labelText(x.querySelector('label'))===label);if(f){f.querySelector('input,select').focus();f.scrollIntoView({behavior:'smooth',block:'center'});}};
   if(!pv.mrn){toast('Enter an MRN to save this assessment',true);focusField('File / MRN');return;}
   if(!pv.date){toast('Enter the assessment date to save',true);focusField('Assessment date');return;}
+  try{
   rememberFields();
   const patients=getPatients();
   const isNew=!patients[pv.mrn];
@@ -1903,6 +1949,12 @@ function saveToLog(){
     toast(isNew?`New record created — ${p.name}`:`Visit ${p.visits.length} added — ${p.name}`);
     if(crit.length)showAlertBanner(crit);
     if(visit.physician&&userRole!=='physician')showSendBanner(pv.mrn,visit.id,visit.physician);
+  }
+  }catch(err){
+    // an unexpected crash while building/saving the record — tell the nurse
+    // explicitly that it did NOT save (stronger than the generic banner), and log it.
+    try{ if(typeof window.cnReport==='function') window.cnReport(err,'saveToLog'); }catch(_){}
+    toast('Could not save this assessment — nothing was recorded. Please try again.',true);
   }
 }
 
