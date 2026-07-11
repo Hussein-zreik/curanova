@@ -123,8 +123,8 @@ Notes:
 - **Not saved** (user's explicit choice): ephemeral guidance for the nurse only — not in the log, print, or portal. Content authored by Claude from the cited guidelines; user reviews live and will flag any wording to change.
 
 **Android APK (prepared, not yet built)**
-- Can't compile here (`dl.google.com` blocked). Plan: build with **PWABuilder** (server-side) from the live URL.
-- Already done on our side: generated signing keystore `curanova-signing.keystore` (sent to user), published `.well-known/assetlinks.json` with its SHA-256 fingerprint for package `app.curanova.twa`, added `.nojekyll`.
+- Can't compile here (`dl.google.com` blocked — needs the Android SDK). Plan: build with **PWABuilder** (browser, server-side) from the live URL.
+- Already done on our side: generated signing keystore `curanova-signing.keystore` (sent to user), published `.well-known/assetlinks.json` with its SHA-256 fingerprint (`55:24:3D:…:A6:A1`) for package `app.curanova.twa`, added `.nojekyll`. **Manifest is store-complete** (session 2026-07-10): added `id`, `lang`, `dir`, `categories`, `launch_handler`, split icons into explicit `any`+`maskable`, and 3 phone `screenshots` (`screenshot-1/2/3.png`, 824×1830 — assessment, interventions, log). **Gotcha:** PWABuilder must sign with the delivered keystore ("Use mine", alias `curanova`, passwords `CuraNova2026`) — a different key ≠ the published fingerprint → the TWA shows a browser URL bar. Optional polish still open: maskable icon has little safe-zone padding (mark tips may clip on the home screen).
 - User's remaining steps: pwabuilder.com → enter live URL → Android → Package ID **`app.curanova.twa`** → signing "Use mine" (upload keystore, alias `curanova`, both passwords `CuraNova2026`) → download `app-release-signed.apk` → share with team.
 
 ---
