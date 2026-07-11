@@ -3,9 +3,9 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "app.curanova.twa",
+      "package_name": "io.github.hussein_zreik.twa",
       "sha256_cert_fingerprints": [
-        "55:24:3D:E3:7A:22:18:BB:14:41:9D:B2:38:E3:74:2B:75:43:7E:35:7E:70:E6:F9:9D:E0:12:EF:71:79:A6:A1"
+        "EB:93:22:85:4E:3F:8E:F0:78:28:7C:92:99:F7:59:A5:65:22:8F:DE:2D:66:CA:FD:AA:9A:88:01:48:EC:16:97"
       ]
     }
   }
