@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 210">
+<defs>
+<mask id="mNavy" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="210"><rect x="0" y="0" width="200" height="210" fill="#fff"/><path d="M34 85 L112 85 L112 180" fill="none" stroke="#000" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/></mask><mask id="mTeal" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="210"><rect x="0" y="0" width="200" height="210" fill="#fff"/><path d="M88 30 L88 125 L166 125" fill="none" stroke="#000" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/></mask>
+<clipPath id="weave"><rect x="92" y="104" width="40" height="48"/></clipPath>
+</defs>
+<path d="M34 85 L112 85 L112 180" fill="none" stroke="#1D4E89" stroke-width="52" stroke-linecap="round" stroke-linejoin="round" mask="url(#mNavy)"/>
+<path d="M88 30 L88 125 L166 125" fill="none" stroke="#0D9488" stroke-width="52" stroke-linecap="round" stroke-linejoin="round" mask="url(#mTeal)"/>
+<g clip-path="url(#weave)"><path d="M34 85 L112 85 L112 180" fill="none" stroke="#1D4E89" stroke-width="52" stroke-linecap="round" stroke-linejoin="round" mask="url(#mNavy)"/></g>
+<circle cx="76" cy="74" r="3.6" fill="#0D9488"/><circle cx="88" cy="74" r="3.6" fill="#0D9488"/><circle cx="100" cy="74" r="3.6" fill="#0D9488"/><circle cx="76" cy="86" r="3.6" fill="#0D9488"/><circle cx="88" cy="86" r="3.6" fill="#0D9488"/><circle cx="100" cy="86" r="3.6" fill="#0D9488"/><circle cx="76" cy="98" r="3.6" fill="#0D9488"/><circle cx="88" cy="98" r="3.6" fill="#0D9488"/><circle cx="100" cy="98" r="3.6" fill="#0D9488"/>
+</svg>
